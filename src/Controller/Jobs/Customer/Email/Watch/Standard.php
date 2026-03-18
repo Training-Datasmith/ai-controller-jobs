@@ -160,7 +160,7 @@ class Standard
 	 *
 	 * @throws \Aimeos\Controller\Jobs\Exception If an error occurs
 	 */
-	public function run()
+	public function run(): void
 	{
 		$manager = \Aimeos\MShop::create( $this->context(), 'customer' );
 
@@ -215,9 +215,7 @@ class Standard
 				$context->logger()->error( $msg, 'email/customer/watch' );
 			}
 
-			$remove = $listItems->diffKeys( $products )->filter( function( $listItem ) use ( $date ) {
-				return $listItem->getDateEnd() < $date;
-			} );
+			$remove = $listItems->diffKeys( $products )->filter( fn($listItem) => $listItem->getDateEnd() < $date );
 
 			$customer->deleteListItems( $remove );
 		}
@@ -254,7 +252,7 @@ class Standard
 					}
 				}
 			}
-			catch( \Exception $e ) { ; } // no price available
+			catch( \Exception ) { ; } // no price available
 		}
 
 		return $result;

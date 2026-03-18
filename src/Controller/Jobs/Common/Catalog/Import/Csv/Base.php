@@ -96,21 +96,21 @@ class Base
 	 */
 	protected function getDefaultMapping() : array
 	{
-		return array(
-			'item' => array(
+		return [
+			'item' => [
 				0 => 'catalog.code',
 				1 => 'catalog.parent',
 				2 => 'catalog.label',
 				3 => 'catalog.status',
-			),
-			'text' => array(
+			],
+			'text' => [
 				4 => 'text.type',
 				5 => 'text.content',
-			),
-			'media' => array(
+			],
+			'media' => [
 				6 => 'media.url',
-			),
-		);
+			],
+		];
 	}
 
 
@@ -126,7 +126,7 @@ class Base
 
 		foreach( array_filter( explode( "\n", $value ) ) as $line )
 		{
-			list( $key, $val ) = explode( ':', $line );
+			[$key, $val] = explode( ':', $line );
 			$config[$key] = $val;
 		}
 

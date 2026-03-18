@@ -155,7 +155,7 @@ class Standard
 	 *
 	 * @throws \Aimeos\Controller\Jobs\Exception If an error occurs
 	 */
-	public function run()
+	public function run(): void
 	{
 		$fh = $this->tempfile();
 		$context = $this->context();
@@ -167,7 +167,7 @@ class Standard
 
 		while( $items = $manager->iterate( $cursor ) )
 		{
-			foreach( $items as $id => $item )
+			foreach( $items as $item )
 			{
 				if( fputcsv( $fh, $item->toArray(), ',', '"', '' ) === false ) {
 					throw new \Aimeos\Controller\Jobs\Exception( 'Unable to write log data to temporary file' );

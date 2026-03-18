@@ -19,7 +19,7 @@ namespace Aimeos\Controller;
  */
 class Jobs
 {
-	private static $objects = [];
+	private static array $objects = [];
 
 
 	/**
@@ -49,7 +49,7 @@ class Jobs
 			$name = $context->config()->get( 'controller/jobs/' . $path . '/name', 'Standard' );
 		}
 
-		$iface = '\\Aimeos\\Controller\\Jobs\\Iface';
+		$iface = \Aimeos\Controller\Jobs\Iface::class;
 		$classname = '\\Aimeos\\Controller\\Jobs\\' . str_replace( '/', '\\', ucwords( $path, '/' ) ) . '\\' . $name;
 
 		return self::createController( $context, $aimeos, $classname, $iface, $path );
@@ -97,7 +97,7 @@ class Jobs
 	 * @param string $classname Full name of the class for which the object should be returned
 	 * @param \Aimeos\Controller\Jobs\Iface|null $controller Frontend controller object
 	 */
-	public static function inject( string $classname, ?\Aimeos\Controller\Jobs\Iface $controller = null )
+	public static function inject( string $classname, ?\Aimeos\Controller\Jobs\Iface $controller = null ): void
 	{
 		self::$objects['\\' . ltrim( $classname, '\\' )] = $controller;
 	}
@@ -158,9 +158,8 @@ class Jobs
 		}
 
 		$classprefix = '\Aimeos\Controller\Jobs\Common\Decorator\\';
-		$controller = self::addDecorators( $context, $aimeos, $controller, $decorators, $classprefix );
 
-		return $controller;
+		return self::addDecorators( $context, $aimeos, $controller, $decorators, $classprefix );
 	}
 
 

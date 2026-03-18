@@ -159,7 +159,7 @@ class Standard
 	 *
 	 * @throws \Aimeos\Controller\Jobs\Exception If an error occurs
 	 */
-	public function run()
+	public function run(): void
 	{
 		$context = $this->context();
 		$logger = $context->logger();
@@ -177,7 +177,7 @@ class Standard
 		{
 			$logger->info( sprintf( 'Started attribute import from "%1$s"', $location ), 'import/xml/attribute' );
 
-			$fcn = function( \Aimeos\MShop\ContextIface $context, string $path ) {
+			$fcn = function( \Aimeos\MShop\ContextIface $context, string $path ): void {
 				$this->import( $context, $path );
 			};
 

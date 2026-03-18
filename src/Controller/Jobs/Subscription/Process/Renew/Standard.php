@@ -155,7 +155,7 @@ class Standard
 	 *
 	 * @throws \Aimeos\Controller\Jobs\Exception If an error occurs
 	 */
-	public function run()
+	public function run(): void
 	{
 		$date = date( 'Y-m-d H:i:s' );
 		$context = $this->context();
@@ -227,7 +227,7 @@ class Standard
 			$type = \Aimeos\MShop\Order\Item\Address\Base::TYPE_PAYMENT;
 			$newOrder->addAddress( $address->copyFrom( $customer->getPaymentAddress() ), $type, 0 );
 		}
-		catch( \Exception $e )
+		catch( \Exception )
 		{
 			$msg = sprintf( 'Unable to add current address for customer with ID "%1$s"', $newOrder->getCustomerId() );
 			$context->logger()->info( $msg, 'subscription/process/renew' );
@@ -265,7 +265,7 @@ class Standard
 			{
 				try {
 					$newOrder->addCoupon( $code );
-				} catch( \Aimeos\MShop\Plugin\Provider\Exception | \Aimeos\MShop\Coupon\Exception $e ) {
+				} catch( \Aimeos\MShop\Plugin\Provider\Exception | \Aimeos\MShop\Coupon\Exception ) {
 					$newOrder->deleteCoupon( $code );
 				}
 			}
@@ -384,7 +384,7 @@ class Standard
 			$groupItems = $manager->search( $filter->slice( 0, count( $customerItem->getGroups() ) ) )->all();
 			$context->setGroups( $groupItems );
 		}
-		catch( \Exception $e ) {} // Subscription without account
+		catch( \Exception ) {} // Subscription without account
 
 		return $context;
 	}

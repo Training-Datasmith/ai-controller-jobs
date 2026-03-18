@@ -154,7 +154,7 @@ class Standard
 	 *
 	 * @throws \Aimeos\Controller\Jobs\Exception If an error occurs
 	 */
-	public function run()
+	public function run(): void
 	{
 		$context = $this->context();
 		$process = $context->process();
@@ -168,7 +168,7 @@ class Standard
 		] ) );
 		$cursor = $manager->cursor( $filter );
 
-		$fcn = function( \Aimeos\MShop\ContextIface $context, \Aimeos\Map $items ) {
+		$fcn = function( \Aimeos\MShop\ContextIface $context, \Aimeos\Map $items ): void {
 			$this->rescale( $context, $items );
 		};
 

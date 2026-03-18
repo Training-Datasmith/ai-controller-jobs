@@ -21,11 +21,7 @@ abstract class Base
 	extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Base
 {
 	use \Aimeos\Controller\Jobs\Common\Types;
-
-
-	private \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Iface $object;
 	private \Aimeos\MShop\ContextIface $context;
-	private array $mapping;
 
 
 	/**
@@ -35,19 +31,17 @@ abstract class Base
 	 * @param array $mapping Associative list of field position in CSV as key and domain item key as value
 	 * @param \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Iface $object Decorated processor
 	 */
-	public function __construct( \Aimeos\MShop\ContextIface $context, array $mapping,
-		?\Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Iface $object = null )
+	public function __construct( \Aimeos\MShop\ContextIface $context, private array $mapping,
+		private \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Iface $object = null )
 	{
 		$this->context = $context;
-		$this->mapping = $mapping;
-		$this->object = $object;
 	}
 
 
 	/**
 	 * Stores all types for which no type items exist yet
 	 */
-	public function finish()
+	public function finish(): void
 	{
 		if( $this->object ) {
 			$this->object->finish();
@@ -107,7 +101,7 @@ abstract class Base
 				throw new \Aimeos\Controller\Jobs\Exception( 'Invalid list configuration: ' . $value );
 			}
 
-			list( $key, $val ) = $parts;
+			[$key, $val] = $parts;
 			$config[$key] = $val;
 		}
 

@@ -155,7 +155,7 @@ class Standard
 	 *
 	 * @throws \Aimeos\Controller\Jobs\Exception If an error occurs
 	 */
-	public function run()
+	public function run(): void
 	{
 		$context = $this->context();
 		$logger = $context->logger();
@@ -173,17 +173,19 @@ class Standard
 
 			$logger->info( sprintf( 'Started coupon/code import from "%1$s"', $location ), 'import/csv/coupon/code' );
 
-			$fcn = function( \Aimeos\MShop\ContextIface $context, $couponId, $fhandle, $path ) {
+			$fcn = function( \Aimeos\MShop\ContextIface $context, string $couponId, $fhandle, string $path ): void {
 				$this->process( $context, $couponId, $fhandle, $path );
 			};
 
 			foreach( map( $fs->scan( $location ) )->sort() as $filename )
 			{
 				$path = $location . '/' . $filename;
-
-				if( $filename[0] === '.' || $fs instanceof \Aimeos\Base\Filesystem\DirIface && $fs->isDir( $path ) ) {
-					continue;
-				}
+                if ($filename[0] === '.') {
+                    continue;
+                }
+                if ($fs instanceof \Aimeos\Base\Filesystem\DirIface && $fs->isDir( $path )) {
+                    continue;
+                }
 
 				list( $couponId,) = explode( '.', $filename );
 

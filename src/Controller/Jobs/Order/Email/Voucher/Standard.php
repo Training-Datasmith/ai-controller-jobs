@@ -160,7 +160,7 @@ class Standard
 	 *
 	 * @throws \Aimeos\Controller\Jobs\Exception If an error occurs
 	 */
-	public function run()
+	public function run(): void
 	{
 		$context = $this->context();
 		$manager = \Aimeos\MShop::create( $context, 'order' );
@@ -203,7 +203,7 @@ class Standard
 	 *
 	 * @param \Aimeos\Map $orderProdItems Complete order including addresses, products, services
 	 */
-	protected function createCoupons( \Aimeos\Map $orderProdItems )
+	protected function createCoupons( \Aimeos\Map $orderProdItems ): \Aimeos\Map
 	{
 		$map = [];
 		$manager = \Aimeos\MShop::create( $this->context(), 'order' );
@@ -393,8 +393,8 @@ class Standard
 
 			public function Footer() { return ( $fcn = $this->footerFcn ) ? $fcn( $this ) : null; }
 			public function Header() { return ( $fcn = $this->headerFcn ) ? $fcn( $this ) : null; }
-			public function setFooterFunction( \Closure $fcn ) { $this->footerFcn = $fcn; }
-			public function setHeaderFunction( \Closure $fcn ) { $this->headerFcn = $fcn; }
+			public function setFooterFunction( \Closure $fcn ): void { $this->footerFcn = $fcn; }
+			public function setHeaderFunction( \Closure $fcn ): void { $this->headerFcn = $fcn; }
 		};
 		$pdf->setCreator( PDF_CREATOR );
 		$pdf->setAuthor( 'Aimeos' );

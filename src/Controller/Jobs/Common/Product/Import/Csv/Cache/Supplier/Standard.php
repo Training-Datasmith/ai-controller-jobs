@@ -77,7 +77,7 @@ class Standard
 	 *
 	 * @param \Aimeos\MShop\Common\Item\Iface $item Supplier object
 	 */
-	public function set( \Aimeos\MShop\Common\Item\Iface $item )
+	public function set( \Aimeos\MShop\Common\Item\Iface $item ): void
 	{
 		$this->suppliers[$item->getCode()] = $item;
 	}

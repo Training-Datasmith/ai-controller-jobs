@@ -21,9 +21,6 @@ abstract class Base
 	extends \Aimeos\Controller\Jobs\Base
 	implements \Aimeos\Controller\Jobs\Common\Decorator\Iface
 {
-	private \Aimeos\Controller\Jobs\Iface $controller;
-
-
 	/**
 	 * Initializes a new controller decorator object.
 	 *
@@ -31,12 +28,10 @@ abstract class Base
 	 * @param \Aimeos\MShop\ContextIface $context Context object with required objects
 	 * @param \Aimeos\Bootstrap $aimeos \Aimeos\Bootstrap object
 	 */
-	public function __construct( \Aimeos\Controller\Jobs\Iface $controller,
+	public function __construct( private \Aimeos\Controller\Jobs\Iface $controller,
 		\Aimeos\MShop\ContextIface $context, \Aimeos\Bootstrap $aimeos )
 	{
 		parent::__construct( $context, $aimeos );
-
-		$this->controller = $controller;
 	}
 
 
@@ -50,7 +45,7 @@ abstract class Base
 	 */
 	public function __call( string $name, array $param )
 	{
-		return call_user_func_array( array( $this->controller, $name ), $param );
+		return call_user_func_array( [ $this->controller, $name ], $param );
 	}
 
 
@@ -81,7 +76,7 @@ abstract class Base
 	 *
 	 * @throws \Aimeos\Controller\Jobs\Exception If an error occurs
 	 */
-	public function run()
+	public function run(): void
 	{
 		$this->controller->run();
 	}

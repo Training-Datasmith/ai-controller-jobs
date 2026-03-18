@@ -22,13 +22,12 @@ interface Iface
 	extends \Aimeos\Controller\Jobs\Iface
 {
 	/**
-	 * Initializes a new controller decorator object.
-	 *
-	 * @param \Aimeos\Controller\Jobs\Iface $controller Controller object
-	 * @param \Aimeos\MShop\ContextIface $context Context object with required objects
-	 * @param \Aimeos\Bootstrap $aimeos \Aimeos\Bootstrap object
-	 * @return null
-	 */
-	public function __construct( \Aimeos\Controller\Jobs\Iface $controller,
+     * Initializes a new controller decorator object.
+     *
+     * @param \Aimeos\Controller\Jobs\Iface $controller Controller object
+     * @param \Aimeos\MShop\ContextIface $context Context object with required objects
+     * @param \Aimeos\Bootstrap $aimeos \Aimeos\Bootstrap object
+     */
+    public function __construct( \Aimeos\Controller\Jobs\Iface $controller,
 		\Aimeos\MShop\ContextIface $context, \Aimeos\Bootstrap $aimeos );
 }

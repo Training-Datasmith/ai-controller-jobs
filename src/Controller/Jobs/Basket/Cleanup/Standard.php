@@ -154,7 +154,7 @@ class Standard
 	 *
 	 * @throws \Aimeos\Controller\Jobs\Exception If an error occurs
 	 */
-	public function run()
+	public function run(): void
 	{
 		$manager = \Aimeos\MShop::create( $this->context(), 'basket' );
 		$filter = $manager->filter()->add( 'basket.mtime', '<=', $this->timestamp() )

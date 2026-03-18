@@ -152,7 +152,7 @@ class Standard
 	/**
 	 * Executes the job.
 	 */
-	public function run()
+	public function run(): void
 	{
 		$context = $this->context();
 		$manager = \Aimeos\MShop::create( $context, 'service' );

@@ -65,7 +65,7 @@ class Standard
 	 * @param \Aimeos\MShop\Subscription\Item\Iface $subscription Subscription item
 	 * @param \Aimeos\MShop\Order\Item\Iface $subscription Order item
 	 */
-	public function begin( \Aimeos\MShop\Subscription\Item\Iface $subscription, \Aimeos\MShop\Order\Item\Iface $order )
+	public function begin( \Aimeos\MShop\Subscription\Item\Iface $subscription, \Aimeos\MShop\Order\Item\Iface $order ): void
 	{
 		$context = $this->context();
 
@@ -90,7 +90,7 @@ class Standard
 	 * @param \Aimeos\MShop\Subscription\Item\Iface $subscription Subscription item
 	 * @param \Aimeos\MShop\Order\Item\Iface $subscription Order item
 	 */
-	public function end( \Aimeos\MShop\Subscription\Item\Iface $subscription, \Aimeos\MShop\Order\Item\Iface $order )
+	public function end( \Aimeos\MShop\Subscription\Item\Iface $subscription, \Aimeos\MShop\Order\Item\Iface $order ): void
 	{
 		$context = $this->context();
 

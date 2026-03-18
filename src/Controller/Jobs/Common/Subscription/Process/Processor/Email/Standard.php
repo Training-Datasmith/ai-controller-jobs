@@ -30,7 +30,7 @@ class Standard
 	 * @param \Aimeos\MShop\Subscription\Item\Iface $subscription Subscription item
 	 * @param \Aimeos\MShop\Order\Item\Iface $subscription Order item
 	 */
-	public function renewAfter( \Aimeos\MShop\Subscription\Item\Iface $subscription, \Aimeos\MShop\Order\Item\Iface $order )
+	public function renewAfter( \Aimeos\MShop\Subscription\Item\Iface $subscription, \Aimeos\MShop\Order\Item\Iface $order ): void
 	{
 		if( $subscription->getReason() === \Aimeos\MShop\Subscription\Item\Iface::REASON_PAYMENT ) {
 			$this->notify( $subscription, $order );
@@ -44,7 +44,7 @@ class Standard
 	 * @param \Aimeos\MShop\Subscription\Item\Iface $subscription Subscription item
 	 * @param \Aimeos\MShop\Order\Item\Iface $subscription Order item
 	 */
-	public function end( \Aimeos\MShop\Subscription\Item\Iface $subscription, \Aimeos\MShop\Order\Item\Iface $order )
+	public function end( \Aimeos\MShop\Subscription\Item\Iface $subscription, \Aimeos\MShop\Order\Item\Iface $order ): void
 	{
 		$this->notify( $subscription, $order );
 	}

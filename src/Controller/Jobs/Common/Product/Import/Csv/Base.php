@@ -119,46 +119,46 @@ class Base
 	 */
 	protected function getDefaultMapping() : array
 	{
-		return array(
-			'item' => array(
+		return [
+			'item' => [
 				0 => 'product.code',
 				1 => 'product.label',
 				2 => 'product.type',
 				3 => 'product.status',
-			),
-			'text' => array(
+			],
+			'text' => [
 				4 => 'text.type',
 				5 => 'text.content',
 				6 => 'text.type',
 				7 => 'text.content',
-			),
-			'media' => array(
+			],
+			'media' => [
 				8 => 'media.url',
-			),
-			'price' => array(
+			],
+			'price' => [
 				9 => 'price.currencyid',
 				10 => 'price.quantity',
 				11 => 'price.value',
 				12 => 'price.taxrate',
-			),
-			'attribute' => array(
+			],
+			'attribute' => [
 				13 => 'product.lists.type',
 				14 => 'attribute.code',
 				15 => 'attribute.type',
-			),
-			'product' => array(
+			],
+			'product' => [
 				16 => 'product.code',
 				17 => 'product.lists.type',
-			),
-			'property' => array(
+			],
+			'property' => [
 				18 => 'product.property.value',
 				19 => 'product.property.type',
-			),
-			'catalog' => array(
+			],
+			'catalog' => [
 				20 => 'catalog.code',
 				21 => 'catalog.lists.type',
-			),
-		);
+			],
+		];
 	}
 
 

@@ -20,9 +20,7 @@ namespace Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor;
 class Base
 	extends \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Base
 {
-	private \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Iface $object;
 	private \Aimeos\MShop\ContextIface $context;
-	private array $mapping;
 
 
 	/**
@@ -32,12 +30,10 @@ class Base
 	 * @param array $mapping Associative list of field position in CSV as key and domain item key as value
 	 * @param \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Iface $object Decorated processor
 	 */
-	public function __construct( \Aimeos\MShop\ContextIface $context, array $mapping,
-		?\Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Iface $object = null )
+	public function __construct( \Aimeos\MShop\ContextIface $context, private array $mapping,
+		private \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Iface $object = null )
 	{
 		$this->context = $context;
-		$this->mapping = $mapping;
-		$this->object = $object;
 	}
 
 

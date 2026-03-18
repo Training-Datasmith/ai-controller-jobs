@@ -158,7 +158,7 @@ class Standard
 	 *
 	 * @throws \Aimeos\Controller\Jobs\Exception If an error occurs
 	 */
-	public function run()
+	public function run(): void
 	{
 		$context = $this->context();
 		$logger = $context->logger();
@@ -180,10 +180,12 @@ class Standard
 			foreach( map( $fs->scan( $location ) )->sort() as $filename )
 			{
 				$path = $location . '/' . $filename;
-
-				if( $filename[0] === '.' || $fs instanceof \Aimeos\Base\Filesystem\DirIface && $fs->isDir( $path ) ) {
-					continue;
-				}
+                if ($filename[0] === '.') {
+                    continue;
+                }
+                if ($fs instanceof \Aimeos\Base\Filesystem\DirIface && $fs->isDir( $path )) {
+                    continue;
+                }
 
 				$errors = $this->import( $path );
 				$files++;
@@ -288,7 +290,7 @@ class Standard
 			}
 		}
 
-		return ( isset( $this->types[$type] ) ? $this->types[$type] : 'default' );
+		return ( $this->types[$type] ?? 'default' );
 	}
 
 
@@ -299,7 +301,7 @@ class Standard
 	 */
 	protected function clean( \Aimeos\Map $products )
 	{
-		$articles = $products->filter( fn( $item ) => $item->getType() === 'select' )
+		$articles = $products->filter( fn( $item ): bool => $item->getType() === 'select' )
 			->getRefItems( 'product', null, 'default' )->flat( 1 );
 
 		$manager = \Aimeos\MShop::create( $this->context(), 'index' );

@@ -98,27 +98,27 @@ class Base
 	 */
 	protected function getDefaultMapping() : array
 	{
-		return array(
-			'item' => array(
+		return [
+			'item' => [
 				0 => 'supplier.code',
 				1 => 'supplier.label',
 				2 => 'supplier.status',
-			),
-			'text' => array(
+			],
+			'text' => [
 				3 => 'text.languageid',
 				4 => 'text.type',
 				5 => 'text.content',
-			),
-			'media' => array(
+			],
+			'media' => [
 				6 => 'media.type',
 				7 => 'media.url',
-			),
-			'address' => array(
+			],
+			'address' => [
 				8 => 'supplier.address.languageid',
 				9 => 'supplier.address.countryid',
 				10 => 'supplier.address.city',
-			),
-		);
+			],
+		];
 	}
 
 

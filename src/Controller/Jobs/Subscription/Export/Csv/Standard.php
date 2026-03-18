@@ -157,7 +157,7 @@ class Standard
 	 *
 	 * @throws \Aimeos\Controller\Jobs\Exception If an error occurs
 	 */
-	public function run()
+	public function run(): void
 	{
 		$context = $this->context();
 		$mq = $context->queue( 'mq-admin', 'subscription-export' );

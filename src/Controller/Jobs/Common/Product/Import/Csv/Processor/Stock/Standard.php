@@ -51,7 +51,7 @@ class Standard
 			$items = $manager->search( $manager->filter()->add( ['stock.productid' => $product->getId()] ) );
 			$items = $items->col( null, 'stock.type' );
 
-			foreach( $map as $pos => $list )
+			foreach( $map as $list )
 			{
 				if( !array_key_exists( 'stock.stocklevel', $list ) ) {
 					continue;

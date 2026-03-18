@@ -62,7 +62,7 @@ class Base
 		{
 			foreach( $entry as $key => $value )
 			{
-				if( is_string( $value ) && strpos( $value, '<' ) !== false ) {
+				if( is_string( $value ) && str_contains( $value, '<' ) ) {
 					throw new \Aimeos\Controller\Jobs\Exception( sprintf( 'HTML tags are not allowed in field "%1$s"', $key ) );
 				}
 			}
@@ -158,8 +158,8 @@ class Base
 	 */
 	protected function getDefaultMapping() : array
 	{
-		return array(
-			'item' => array(
+		return [
+			'item' => [
 				0 => 'customer.code', // e.g. unique EAN code
 				1 => 'customer.label', // UTF-8 encoded text, also used as customer name
 				2 => 'customer.salutation',
@@ -185,11 +185,11 @@ class Base
 				22 => 'customer.latitude',
 				23 => 'customer.birthday',
 				24 => 'customer.status', // Status value (-2, -1, 0, 1)
-			),
-			'group' => array(
+			],
+			'group' => [
 				25 => 'customer.groups',
-			),
-			'address' => array(
+			],
+			'address' => [
 				26 => 'customer.address.salutation',
 				27 => 'customer.address.company',
 				28 => 'customer.address.vatid',
@@ -212,13 +212,13 @@ class Base
 				45 => 'customer.address.longitude',
 				46 => 'customer.address.latitude',
 				47 => 'customer.address.birthday',
-			),
-			'property' => array(
+			],
+			'property' => [
 				48 => 'customer.property.type',
 				49 => 'customer.property.languageid',
 				50 => 'customer.property.value',
-			),
-		);
+			],
+		];
 	}
 
 

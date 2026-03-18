@@ -21,31 +21,6 @@ class Standard
 	extends \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Base
 	implements \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Iface
 {
-	/** controller/jobs/supplier/import/csv/processor/address/name
-	 * Name of the address processor implementation
-	 *
-	 * Use "Myname" if your class is named "\Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Address\Myname".
-	 * The name is case-sensitive and you should avoid camel case names like "MyName".
-	 *
-	 * @param string Last part of the processor class name
-	 * @since 2020.07
-	 */
-
-
-	/**
-	 * Initializes the object
-	 *
-	 * @param \Aimeos\MShop\ContextIface $context Context object
-	 * @param array $mapping Associative list of field position in CSV as key and domain item key as value
-	 * @param \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Iface $object Decorated processor
-	 */
-	public function __construct( \Aimeos\MShop\ContextIface $context, array $mapping,
-		?\Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Iface $object = null )
-	{
-		parent::__construct( $context, $mapping, $object );
-	}
-
-
 	/**
 	 * Saves the supplier related data to the storage
 	 *
@@ -59,7 +34,7 @@ class Standard
 		$map = $this->getMappedChunk( $data, $this->getMapping() );
 		$items = $supplier->getAddressItems();
 
-		foreach( $map as $pos => $list )
+		foreach( $map as $list )
 		{
 			if( $this->checkEntry( $list ) === false ) {
 				continue;

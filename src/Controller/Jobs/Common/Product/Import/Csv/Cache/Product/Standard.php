@@ -65,7 +65,7 @@ class Standard
 	 *
 	 * @param \Aimeos\MShop\Common\Item\Iface $item Product object
 	 */
-	public function set( \Aimeos\MShop\Common\Item\Iface $item )
+	public function set( \Aimeos\MShop\Common\Item\Iface $item ): void
 	{
 		$this->prodmap[$item->getCode()] = $item->getId();
 	}

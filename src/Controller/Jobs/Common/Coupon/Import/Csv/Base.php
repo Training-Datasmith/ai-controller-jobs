@@ -75,16 +75,16 @@ class Base
 	 *
 	 * @return array Associative list of domains as keys and a list of positions and the domain item keys as values
 	 */
-	protected function getDefaultMapping()
+	protected function getDefaultMapping(): array
 	{
-		return array(
-			'code' => array(
+		return [
+			'code' => [
 				0 => 'coupon.code.code',
 				1 => 'coupon.code.count',
 				2 => 'coupon.code.datestart',
 				3 => 'coupon.code.dateend',
-			),
-		);
+			],
+		];
 	}
 
 
@@ -95,7 +95,7 @@ class Base
 	 * @param array $mapping List of domain item keys with the CSV field position as key
 	 * @return array List of associative arrays containing the chunked properties
 	 */
-	protected function getMappedChunk( array &$data, array $mapping )
+	protected function getMappedChunk( array &$data, array $mapping ): array
 	{
 		$idx = 0;
 		$map = [];

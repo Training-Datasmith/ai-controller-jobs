@@ -157,7 +157,7 @@ class Standard
 	 *
 	 * @throws \Aimeos\Controller\Jobs\Exception If an error occurs
 	 */
-	public function run()
+	public function run(): void
 	{
 		$manager = \Aimeos\MShop::create( $this->context(), 'product' );
 		$filter = $manager->filter()->order( 'product.id' )->slice( 0, $this->max() );

@@ -77,7 +77,7 @@ class Standard
 	 *
 	 * @param \Aimeos\MShop\Common\Item\Iface $item Catalog object
 	 */
-	public function set( \Aimeos\MShop\Common\Item\Iface $item )
+	public function set( \Aimeos\MShop\Common\Item\Iface $item ): void
 	{
 		$this->categories[$item->getCode()] = $item;
 	}

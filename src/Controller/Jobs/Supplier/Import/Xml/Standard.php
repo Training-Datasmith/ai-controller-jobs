@@ -159,7 +159,7 @@ class Standard
 	 *
 	 * @throws \Aimeos\Controller\Jobs\Exception If an error occurs
 	 */
-	public function run()
+	public function run(): void
 	{
 		$context = $this->context();
 		$logger = $context->logger();
@@ -177,17 +177,19 @@ class Standard
 
 			$logger->info( sprintf( 'Started supplier import from "%1$s"', $location ), 'import/xml/supplier' );
 
-			$fcn = function( \Aimeos\MShop\ContextIface $context, string $path ) {
+			$fcn = function( \Aimeos\MShop\ContextIface $context, string $path ): void {
 				$this->import( $context, $path );
 			};
 
 			foreach( map( $fs->scan( $location ) )->sort() as $filename )
 			{
 				$path = $location . '/' . $filename;
-
-				if( $filename[0] === '.' || $fs instanceof \Aimeos\Base\Filesystem\DirIface && $fs->isDir( $path ) ) {
-					continue;
-				}
+                if ($filename[0] === '.') {
+                    continue;
+                }
+                if ($fs instanceof \Aimeos\Base\Filesystem\DirIface && $fs->isDir( $path )) {
+                    continue;
+                }
 
 				$process->start( $fcn, [$context, $path] );
 			}

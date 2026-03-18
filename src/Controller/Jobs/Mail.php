@@ -50,20 +50,15 @@ trait Mail
 	 */
 	protected function mailIntro( \Aimeos\MShop\Common\Item\Address\Iface $addr ) : string
 	{
-		switch( $addr->getSalutation() )
-		{
-			case '':
-				/// E-mail intro with first name (%1$s) and last name (%2$s)
-				$msg = $this->context()->translate( 'controller/jobs', 'Dear %1$s %2$s' ); break;
-			case 'mr':
-				/// E-mail intro with first name (%1$s) and last name (%2$s)
-				$msg = $this->context()->translate( 'controller/jobs', 'Dear Mr %1$s %2$s' ); break;
-			case 'ms':
-				/// E-mail intro with first name (%1$s) and last name (%2$s)
-				$msg = $this->context()->translate( 'controller/jobs', 'Dear Ms %1$s %2$s' ); break;
-			default:
-				$msg = $this->context()->translate( 'controller/jobs', 'Dear customer' );
-		}
+		$msg = match ($addr->getSalutation()) {
+            /// E-mail intro with first name (%1$s) and last name (%2$s)
+            '' => $this->context()->translate( 'controller/jobs', 'Dear %1$s %2$s' ),
+            /// E-mail intro with first name (%1$s) and last name (%2$s)
+            'mr' => $this->context()->translate( 'controller/jobs', 'Dear Mr %1$s %2$s' ),
+            /// E-mail intro with first name (%1$s) and last name (%2$s)
+            'ms' => $this->context()->translate( 'controller/jobs', 'Dear Ms %1$s %2$s' ),
+            default => $this->context()->translate( 'controller/jobs', 'Dear customer' ),
+        };
 
 		return sprintf( $msg, $addr->getFirstName(), $addr->getLastName() );
 	}

@@ -151,7 +151,7 @@ class Standard
 	/**
 	 * Executes the job.
 	 */
-	public function run()
+	public function run(): void
 	{
 		$context = $this->context();
 
@@ -175,11 +175,13 @@ class Standard
 
 		foreach( $fs->scan( $dirname ) as $name )
 		{
-			if( in_array( $name, ['.', '..'] ) || $fs->isDir( $dirname . '/' . $name ) ) {
-				continue;
-			}
-
-			try
+			if (in_array( $name, ['.', '..'] )) {
+                continue;
+            }
+            if ($fs->isDir( $dirname . '/' . $name )) {
+                continue;
+            }
+            try
 			{
 				$handle = $fs->reads( $dirname . '/' . $name );
 

@@ -155,7 +155,7 @@ class Standard
 	 *
 	 * @throws \Aimeos\Controller\Jobs\Exception If an error occurs
 	 */
-	public function run()
+	public function run(): void
 	{
 		\Aimeos\MShop::create( $this->context(), 'index' )->optimize();
 	}

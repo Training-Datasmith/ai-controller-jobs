@@ -46,7 +46,7 @@ class Standard
 		$manager = \Aimeos\MShop::create( $context, 'attribute' );
 		$result = $manager->search( $manager->filter() );
 
-		foreach( $result as $id => $item ) {
+		foreach( $result as $item ) {
 			$this->attributes[$item->getCode()][$item->getType()] = $item;
 		}
 	}
@@ -81,7 +81,7 @@ class Standard
 	 *
 	 * @param \Aimeos\MShop\Common\Item\Iface $item Attribute object
 	 */
-	public function set( \Aimeos\MShop\Common\Item\Iface $item )
+	public function set( \Aimeos\MShop\Common\Item\Iface $item ): void
 	{
 		$this->attributes[$item->getCode()][$item->getType()] = $item;
 	}

@@ -38,7 +38,7 @@ class Standard
 	/**
 	 * Clean up and store data.
 	 */
-	public function finish()
+	public function finish(): void
 	{
 		foreach( $this->getProcessors() as $proc ) {
 			$proc->finish();
