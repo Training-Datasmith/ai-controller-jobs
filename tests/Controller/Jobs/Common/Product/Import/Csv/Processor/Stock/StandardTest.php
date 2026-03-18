@@ -1,210 +1,194 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2015-2026
  */
 
-
 namespace Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Stock;
-
 
 class StandardTest extends \PHPUnit\Framework\TestCase
 {
-	private $context;
-	private $endpoint;
+    private $context;
+    private $endpoint;
 
+    protected function setUp(): void
+    {
+        \Aimeos\MShop::cache(true);
 
-	protected function setUp() : void
-	{
-		\Aimeos\MShop::cache( true );
+        $this->context = \TestHelper::context();
+        $this->endpoint = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Done($this->context, []);
+    }
 
-		$this->context = \TestHelper::context();
-		$this->endpoint = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Done( $this->context, [] );
-	}
+    protected function tearDown(): void
+    {
+        \Aimeos\MShop::cache(false);
+    }
 
+    public function testProcess()
+    {
+        $mapping = [
+            0 => 'stock.stocklevel',
+            1 => 'stock.dateback',
+        ];
 
-	protected function tearDown() : void
-	{
-		\Aimeos\MShop::cache( false );
-	}
+        $data = [
+            0 => '100',
+            1 => '2000-01-01 00:00:00',
+        ];
 
+        $product = $this->create('job_csv_test');
 
-	public function testProcess()
-	{
-		$mapping = array(
-			0 => 'stock.stocklevel',
-			1 => 'stock.dateback',
-		);
+        $object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Stock\Standard($this->context, $mapping, $this->endpoint);
+        $object->process($product, $data);
 
-		$data = array(
-			0 => '100',
-			1 => '2000-01-01 00:00:00',
-		);
+        $items = $this->getStockItems($product->getId());
+        $this->delete($product);
 
-		$product = $this->create( 'job_csv_test' );
+        $this->assertEquals(1, count($items));
 
-		$object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Stock\Standard( $this->context, $mapping, $this->endpoint );
-		$object->process( $product, $data );
+        foreach ($items as $item) {
+            $this->assertEquals(100, $item->getStockLevel());
+            $this->assertEquals('2000-01-01 00:00:00', $item->getDateBack());
+        }
+    }
 
-		$items = $this->getStockItems( $product->getId() );
-		$this->delete( $product );
+    public function testProcessMultiple()
+    {
+        $mapping = [
+            0 => 'stock.type',
+            1 => 'stock.stocklevel',
+            2 => 'stock.type',
+            3 => 'stock.stocklevel',
+        ];
 
+        $data = [
+            0 => 'unit_type1',
+            1 => '200',
+            2 => 'unit_type2',
+            3 => '200',
+        ];
 
-		$this->assertEquals( 1, count( $items ) );
+        $product = $this->create('job_csv_test');
 
-		foreach( $items as $item )
-		{
-			$this->assertEquals( 100, $item->getStockLevel() );
-			$this->assertEquals( '2000-01-01 00:00:00', $item->getDateBack() );
-		}
-	}
+        $object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Stock\Standard($this->context, $mapping, $this->endpoint);
+        $object->process($product, $data);
 
+        $items = $this->getStockItems($product->getId());
+        $this->delete($product);
 
-	public function testProcessMultiple()
-	{
-		$mapping = array(
-			0 => 'stock.type',
-			1 => 'stock.stocklevel',
-			2 => 'stock.type',
-			3 => 'stock.stocklevel',
-		);
+        $this->assertEquals(2, count($items));
 
-		$data = array(
-			0 => 'unit_type1',
-			1 => '200',
-			2 => 'unit_type2',
-			3 => '200',
-		);
+        foreach ($items as $item) {
+            $this->assertEquals(200, $item->getStockLevel());
+        }
+    }
 
-		$product = $this->create( 'job_csv_test' );
+    public function testProcessUpdate()
+    {
+        $mapping = [
+            0 => 'stock.stocklevel',
+        ];
 
-		$object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Stock\Standard( $this->context, $mapping, $this->endpoint );
-		$object->process( $product, $data );
+        $data = [
+            0 => '10',
+        ];
 
-		$items = $this->getStockItems( $product->getId() );
-		$this->delete( $product );
+        $dataUpdate = [
+            0 => '20',
+        ];
 
+        $product = $this->create('job_csv_test');
 
-		$this->assertEquals( 2, count( $items ) );
+        $object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Stock\Standard($this->context, $mapping, $this->endpoint);
 
-		foreach( $items as $item ) {
-			$this->assertEquals( 200, $item->getStockLevel() );
-		}
-	}
+        $object->process($product, $data);
+        $object->process($product, $dataUpdate);
 
+        $items = $this->getStockItems($product->getId());
+        $this->delete($product);
 
-	public function testProcessUpdate()
-	{
-		$mapping = array(
-			0 => 'stock.stocklevel',
-		);
+        $this->assertEquals(1, count($items));
+        $this->assertEquals(20, current($items)->getStockLevel());
+    }
 
-		$data = array(
-			0 => '10',
-		);
+    public function testProcessDelete()
+    {
+        $mapping = [
+            0 => 'stock.stocklevel',
+        ];
 
-		$dataUpdate = array(
-			0 => '20',
-		);
+        $data = [
+            0 => 50,
+        ];
 
-		$product = $this->create( 'job_csv_test' );
+        $product = $this->create('job_csv_test');
 
-		$object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Stock\Standard( $this->context, $mapping, $this->endpoint );
+        $object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Stock\Standard($this->context, $mapping, $this->endpoint);
+        $object->process($product, $data);
 
-		$object->process( $product, $data );
-		$object->process( $product, $dataUpdate );
+        $object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Stock\Standard($this->context, [], $this->endpoint);
+        $object->process($product, []);
 
-		$items = $this->getStockItems( $product->getId() );
-		$this->delete( $product );
+        $items = $this->getStockItems($product->getId());
+        $this->delete($product);
 
+        $this->assertEquals(0, count($items));
+    }
 
-		$this->assertEquals( 1, count( $items ) );
-		$this->assertEquals( 20, current( $items )->getStockLevel() );
-	}
+    public function testProcessEmpty()
+    {
+        $mapping = [
+            0 => 'stock.type',
+            1 => 'stock.stocklevel',
+            2 => 'stock.dateback',
+        ];
 
+        $data = [
+            0 => 'unit_type1',
+            1 => '',
+            2 => '',
+        ];
 
-	public function testProcessDelete()
-	{
-		$mapping = array(
-			0 => 'stock.stocklevel',
-		);
+        $product = $this->create('job_csv_test');
 
-		$data = array(
-			0 => 50,
-		);
+        $object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Stock\Standard($this->context, $mapping, $this->endpoint);
+        $object->process($product, $data);
 
-		$product = $this->create( 'job_csv_test' );
+        $items = $this->getStockItems($product->getId());
+        $this->delete($product);
 
-		$object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Stock\Standard( $this->context, $mapping, $this->endpoint );
-		$object->process( $product, $data );
+        $this->assertEquals(1, count($items));
 
-		$object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Stock\Standard( $this->context, [], $this->endpoint );
-		$object->process( $product, [] );
+        foreach ($items as $item) {
+            $this->assertEquals(null, $item->getStockLevel());
+            $this->assertEquals(null, $item->getDateBack());
+        }
+    }
 
-		$items = $this->getStockItems( $product->getId() );
-		$this->delete( $product );
+    /**
+     * @param string $code
+     */
+    protected function create($code)
+    {
+        $manager = \Aimeos\MShop::create($this->context, 'product');
+        return $manager->save($manager->create()->setCode($code));
+    }
 
+    protected function delete(\Aimeos\MShop\Product\Item\Iface $product)
+    {
+        $manager = \Aimeos\MShop::create($this->context, 'stock');
+        $filter = $manager->filter()->add(['stock.productid' => $product->getId()]);
+        $manager->delete($manager->search($filter)->toArray());
 
-		$this->assertEquals( 0, count( $items ) );
-	}
+        \Aimeos\MShop::create($this->context, 'product')->delete($product->getId());
+    }
 
-
-	public function testProcessEmpty()
-	{
-		$mapping = array(
-			0 => 'stock.type',
-			1 => 'stock.stocklevel',
-			2 => 'stock.dateback',
-		);
-
-		$data = array(
-			0 => 'unit_type1',
-			1 => '',
-			2 => '',
-		);
-
-		$product = $this->create( 'job_csv_test' );
-
-		$object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Stock\Standard( $this->context, $mapping, $this->endpoint );
-		$object->process( $product, $data );
-
-		$items = $this->getStockItems( $product->getId() );
-		$this->delete( $product );
-
-		$this->assertEquals( 1, count( $items ) );
-
-		foreach( $items as $item )
-		{
-			$this->assertEquals( null, $item->getStockLevel() );
-			$this->assertEquals( null, $item->getDateBack() );
-		}
-	}
-
-
-	/**
-	 * @param string $code
-	 */
-	protected function create( $code )
-	{
-		$manager = \Aimeos\MShop::create( $this->context, 'product' );
-		return $manager->save( $manager->create()->setCode( $code ) );
-	}
-
-
-	protected function delete( \Aimeos\MShop\Product\Item\Iface $product )
-	{
-		$manager = \Aimeos\MShop::create( $this->context, 'stock' );
-		$filter = $manager->filter()->add( ['stock.productid' => $product->getId()] );
-		$manager->delete( $manager->search( $filter )->toArray() );
-
-		\Aimeos\MShop::create( $this->context, 'product' )->delete( $product->getId() );
-	}
-
-
-	protected function getStockItems( $prodid ) : array
-	{
-		$manager = \Aimeos\MShop::create( $this->context, 'stock' );
-		return $manager->search( $manager->filter()->add( ['stock.productid' => $prodid] ) )->all();
-	}
+    protected function getStockItems($prodid): array
+    {
+        $manager = \Aimeos\MShop::create($this->context, 'stock');
+        return $manager->search($manager->filter()->add(['stock.productid' => $prodid]))->all();
+    }
 }

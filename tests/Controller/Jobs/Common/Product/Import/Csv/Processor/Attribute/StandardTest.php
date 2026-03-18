@@ -1,261 +1,245 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2015-2026
  */
 
-
 namespace Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Attribute;
-
 
 class StandardTest extends \PHPUnit\Framework\TestCase
 {
-	private $context;
-	private $endpoint;
+    private $context;
+    private $endpoint;
 
+    protected function setUp(): void
+    {
+        \Aimeos\MShop::cache(true);
 
-	protected function setUp() : void
-	{
-		\Aimeos\MShop::cache( true );
+        $this->context = \TestHelper::context();
+        $this->endpoint = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Done($this->context, []);
+    }
 
-		$this->context = \TestHelper::context();
-		$this->endpoint = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Done( $this->context, [] );
-	}
+    protected function tearDown(): void
+    {
+        \Aimeos\MShop::cache(false);
+    }
 
+    public function testProcess()
+    {
+        $mapping = [
+            0 => 'attribute.type',
+            1 => 'attribute.code',
+            2 => 'product.lists.type',
+            3 => 'attribute.type',
+            4 => 'attribute.code',
+            5 => 'product.lists.type',
+            6 => 'attribute.type',
+            7 => 'attribute.code',
+            8 => 'product.lists.type',
+        ];
 
-	protected function tearDown() : void
-	{
-		\Aimeos\MShop::cache( false );
-	}
+        $data = [
+            0 => 'length',
+            1 => '30',
+            2 => 'variant',
+            3 => 'width',
+            4 => '29',
+            5 => 'variant',
+            6 => 'color',
+            7 => 'white',
+            8 => 'variant',
+        ];
 
+        $product = $this->create('job_csv_test');
 
-	public function testProcess()
-	{
-		$mapping = array(
-			0 => 'attribute.type',
-			1 => 'attribute.code',
-			2 => 'product.lists.type',
-			3 => 'attribute.type',
-			4 => 'attribute.code',
-			5 => 'product.lists.type',
-			6 => 'attribute.type',
-			7 => 'attribute.code',
-			8 => 'product.lists.type',
-		);
+        $object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Attribute\Standard($this->context, $mapping, $this->endpoint);
+        $object->process($product, $data);
 
-		$data = array(
-			0 => 'length',
-			1 => '30',
-			2 => 'variant',
-			3 => 'width',
-			4 => '29',
-			5 => 'variant',
-			6 => 'color',
-			7 => 'white',
-			8 => 'variant',
-		);
+        $pos = 0;
+        $listItems = $product->getListItems();
+        $expected = [
+            [ 'variant', 'length', '30' ],
+            [ 'variant', 'width', '29' ],
+            [ 'variant', 'color', 'white' ],
+        ];
 
-		$product = $this->create( 'job_csv_test' );
+        $this->assertEquals(3, count($listItems));
 
-		$object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Attribute\Standard( $this->context, $mapping, $this->endpoint );
-		$object->process( $product, $data );
+        foreach ($listItems as $listItem) {
+            $this->assertEquals(1, $listItem->getStatus());
+            $this->assertEquals('attribute', $listItem->getDomain());
+            $this->assertEquals($expected[$pos][0], $listItem->getType());
+            $this->assertEquals($expected[$pos][1], $listItem->getRefItem()->getType());
+            $this->assertEquals($expected[$pos][2], $listItem->getRefItem()->getCode());
+            $pos++;
+        }
+    }
 
+    public function testProcessMultiple()
+    {
+        $mapping = [
+            0 => 'attribute.type',
+            1 => 'attribute.code',
+            2 => 'product.lists.type',
+        ];
 
-		$pos = 0;
-		$listItems = $product->getListItems();
-		$expected = array(
-			array( 'variant', 'length', '30' ),
-			array( 'variant', 'width', '29' ),
-			array( 'variant', 'color', 'white' ),
-		);
+        $data = [
+            0 => 'color',
+            1 => "white\nblack\naimeos",
+            2 => 'variant',
+        ];
 
-		$this->assertEquals( 3, count( $listItems ) );
+        $product = $this->create('job_csv_test');
 
-		foreach( $listItems as $listItem )
-		{
-			$this->assertEquals( 1, $listItem->getStatus() );
-			$this->assertEquals( 'attribute', $listItem->getDomain() );
-			$this->assertEquals( $expected[$pos][0], $listItem->getType() );
-			$this->assertEquals( $expected[$pos][1], $listItem->getRefItem()->getType() );
-			$this->assertEquals( $expected[$pos][2], $listItem->getRefItem()->getCode() );
-			$pos++;
-		}
-	}
+        $mock = $this->getMockBuilder('\Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Attribute\Standard')
+            ->setConstructorArgs([$this->context, $mapping, $this->endpoint])
+            ->onlyMethods(['getAttributeItem'])
+            ->getMock();
 
+        $item = \Aimeos\MShop::create($this->context, 'attribute')->create()->setType('color');
+        $mock->expects($this->exactly(3))->method('getAttributeItem')
+            ->willReturn(clone $item, clone $item, clone $item);
 
-	public function testProcessMultiple()
-	{
-		$mapping = array(
-			0 => 'attribute.type',
-			1 => 'attribute.code',
-			2 => 'product.lists.type',
-		);
+        $mock->process($product, $data);
 
-		$data = array(
-			0 => 'color',
-			1 => "white\nblack\naimeos",
-			2 => 'variant',
-		);
+        $pos = 0;
+        $listItems = $product->getListItems();
+        $codes = [ 'white', 'black', 'aimeos' ];
 
-		$product = $this->create( 'job_csv_test' );
+        $this->assertEquals(3, count($listItems));
 
-		$mock = $this->getMockBuilder( '\Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Attribute\Standard' )
-			->setConstructorArgs( [$this->context, $mapping, $this->endpoint] )
-			->onlyMethods( ['getAttributeItem'] )
-			->getMock();
+        foreach ($listItems as $listItem) {
+            $this->assertEquals(1, $listItem->getStatus());
+            $this->assertEquals('attribute', $listItem->getDomain());
+            $this->assertEquals('variant', $listItem->getType());
+            $this->assertEquals('color', $listItem->getRefItem()->getType());
+            $this->assertEquals($codes[$pos], $listItem->getRefItem()->getCode());
+            $pos++;
+        }
+    }
 
-		$item = \Aimeos\MShop::create( $this->context, 'attribute' )->create()->setType( 'color' );
-		$mock->expects( $this->exactly( 3 ) )->method( 'getAttributeItem' )
-			->willReturn( clone $item, clone $item, clone $item );
+    public function testProcessUpdate()
+    {
+        $mapping = [
+            0 => 'attribute.type',
+            1 => 'attribute.code',
+        ];
 
-		$mock->process( $product, $data );
+        $data = [
+            0 => 'length',
+            1 => '30',
+        ];
 
+        $dataUpdate = [
+            0 => 'width',
+            1 => '29',
+        ];
 
-		$pos = 0;
-		$listItems = $product->getListItems();
-		$codes = array( 'white', 'black', 'aimeos' );
+        $product = $this->create('job_csv_test');
 
-		$this->assertEquals( 3, count( $listItems ) );
+        $object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Attribute\Standard($this->context, $mapping, $this->endpoint);
+        $object->process($product, $data);
+        $object->process($product, $dataUpdate);
 
-		foreach( $listItems as $listItem )
-		{
-			$this->assertEquals( 1, $listItem->getStatus() );
-			$this->assertEquals( 'attribute', $listItem->getDomain() );
-			$this->assertEquals( 'variant', $listItem->getType() );
-			$this->assertEquals( 'color', $listItem->getRefItem()->getType() );
-			$this->assertEquals( $codes[$pos], $listItem->getRefItem()->getCode() );
-			$pos++;
-		}
-	}
+        $listItems = $product->getListItems();
+        $listItem = $listItems->first();
 
+        $this->assertEquals(1, count($listItems));
+        $this->assertInstanceOf('\\Aimeos\\MShop\\Common\\Item\\Lists\\Iface', $listItem);
 
-	public function testProcessUpdate()
-	{
-		$mapping = array(
-			0 => 'attribute.type',
-			1 => 'attribute.code',
-		);
+        $this->assertEquals('width', $listItem->getRefItem()->getType());
+        $this->assertEquals('29', $listItem->getRefItem()->getCode());
+    }
 
-		$data = array(
-			0 => 'length',
-			1 => '30',
-		);
+    public function testProcessDelete()
+    {
+        $mapping = [
+            0 => 'attribute.type',
+            1 => 'attribute.code',
+        ];
 
-		$dataUpdate = array(
-			0 => 'width',
-			1 => '29',
-		);
+        $data = [
+            0 => 'length',
+            1 => '30',
+        ];
 
-		$product = $this->create( 'job_csv_test' );
+        $product = $this->create('job_csv_test');
 
-		$object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Attribute\Standard( $this->context, $mapping, $this->endpoint );
-		$object->process( $product, $data );
-		$object->process( $product, $dataUpdate );
+        $object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Attribute\Standard($this->context, $mapping, $this->endpoint);
+        $object->process($product, $data);
 
+        $object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Attribute\Standard($this->context, [], $this->endpoint);
+        $object->process($product, []);
 
-		$listItems = $product->getListItems();
-		$listItem = $listItems->first();
+        $listItems = $product->getListItems();
 
-		$this->assertEquals( 1, count( $listItems ) );
-		$this->assertInstanceOf( '\\Aimeos\\MShop\\Common\\Item\\Lists\\Iface', $listItem );
+        $this->assertEquals(0, count($listItems));
+    }
 
-		$this->assertEquals( 'width', $listItem->getRefItem()->getType() );
-		$this->assertEquals( '29', $listItem->getRefItem()->getCode() );
-	}
+    public function testProcessEmpty()
+    {
+        $mapping = [
+            0 => 'attribute.type',
+            1 => 'attribute.code',
+            2 => 'attribute.type',
+            3 => 'attribute.code',
+        ];
 
+        $data = [
+            0 => '',
+            1 => '',
+            2 => 'length',
+            3 => '30',
+        ];
 
-	public function testProcessDelete()
-	{
-		$mapping = array(
-			0 => 'attribute.type',
-			1 => 'attribute.code',
-		);
+        $product = $this->create('job_csv_test');
 
-		$data = array(
-			0 => 'length',
-			1 => '30',
-		);
+        $object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Attribute\Standard($this->context, $mapping, $this->endpoint);
+        $object->process($product, $data);
 
-		$product = $this->create( 'job_csv_test' );
+        $listItems = $product->getListItems();
 
-		$object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Attribute\Standard( $this->context, $mapping, $this->endpoint );
-		$object->process( $product, $data );
+        $this->assertEquals(1, count($listItems));
+    }
 
-		$object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Attribute\Standard( $this->context, [], $this->endpoint );
-		$object->process( $product, [] );
+    public function testProcessListtypes()
+    {
+        $mapping = [
+            0 => 'attribute.type',
+            1 => 'attribute.code',
+            2 => 'product.lists.type',
+            3 => 'attribute.type',
+            4 => 'attribute.code',
+            5 => 'product.lists.type',
+        ];
 
+        $data = [
+            0 => 'length',
+            1 => '32',
+            2 => 'custom',
+            3 => 'width',
+            4 => '30',
+            5 => 'default',
+        ];
 
-		$listItems = $product->getListItems();
+        $this->context->config()->set('controller/jobs/product/import/csv/processor/attribute/listtypes', [ 'default' ]);
 
-		$this->assertEquals( 0, count( $listItems ) );
-	}
+        $product = $this->create('job_csv_test');
 
+        $object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Attribute\Standard($this->context, $mapping, $this->endpoint);
 
-	public function testProcessEmpty()
-	{
-		$mapping = array(
-			0 => 'attribute.type',
-			1 => 'attribute.code',
-			2 => 'attribute.type',
-			3 => 'attribute.code',
-		);
+        $this->expectException('\Aimeos\Controller\Jobs\Exception');
+        $object->process($product, $data);
+    }
 
-		$data = array(
-			0 => '',
-			1 => '',
-			2 => 'length',
-			3 => '30',
-		);
-
-		$product = $this->create( 'job_csv_test' );
-
-		$object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Attribute\Standard( $this->context, $mapping, $this->endpoint );
-		$object->process( $product, $data );
-
-
-		$listItems = $product->getListItems();
-
-		$this->assertEquals( 1, count( $listItems ) );
-	}
-
-
-	public function testProcessListtypes()
-	{
-		$mapping = array(
-			0 => 'attribute.type',
-			1 => 'attribute.code',
-			2 => 'product.lists.type',
-			3 => 'attribute.type',
-			4 => 'attribute.code',
-			5 => 'product.lists.type',
-		);
-
-		$data = array(
-			0 => 'length',
-			1 => '32',
-			2 => 'custom',
-			3 => 'width',
-			4 => '30',
-			5 => 'default',
-		);
-
-		$this->context->config()->set( 'controller/jobs/product/import/csv/processor/attribute/listtypes', array( 'default' ) );
-
-		$product = $this->create( 'job_csv_test' );
-
-		$object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Attribute\Standard( $this->context, $mapping, $this->endpoint );
-
-		$this->expectException( '\Aimeos\Controller\Jobs\Exception' );
-		$object->process( $product, $data );
-	}
-
-
-	/**
-	 * @param string $code
-	 */
-	protected function create( $code )
-	{
-		return \Aimeos\MShop::create( $this->context, 'product' )->create()->setCode( $code );
-	}
+    /**
+     * @param string $code
+     */
+    protected function create($code)
+    {
+        return \Aimeos\MShop::create($this->context, 'product')->create()->setCode($code);
+    }
 }

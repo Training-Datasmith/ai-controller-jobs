@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @copyright Metaways Infosystems GmbH, 2013
  * @license LGPLv3, https://opensource.org/licenses/LGPL-3.0
@@ -8,9 +10,7 @@
  * @subpackage Jobs
  */
 
-
 namespace Aimeos\Controller\Jobs;
-
 
 /**
  * Common methods for Jobs controller classes.
@@ -18,147 +18,139 @@ namespace Aimeos\Controller\Jobs;
  * @package Controller
  * @subpackage Jobs
  */
-abstract class Base
-	implements \Aimeos\Macro\Iface
+abstract class Base implements \Aimeos\Macro\Iface
 {
-	use \Aimeos\Macro\Macroable;
+    use \Aimeos\Macro\Macroable;
 
+    private \Aimeos\Bootstrap $aimeos;
+    private \Aimeos\MShop\ContextIface $context;
 
-	private \Aimeos\Bootstrap $aimeos;
-	private \Aimeos\MShop\ContextIface $context;
+    /**
+     * Initializes the object.
+     *
+     * @param \Aimeos\MShop\ContextIface $context MShop context object
+     * @param \Aimeos\Bootstrap $aimeos \Aimeos\Bootstrap main object
+     */
+    public function __construct(\Aimeos\MShop\ContextIface $context, \Aimeos\Bootstrap $aimeos)
+    {
+        $this->context = $context;
+        $this->aimeos = $aimeos;
+    }
 
+    /**
+     * Catch unknown methods
+     *
+     * @param string $name Name of the method
+     * @param array $param List of method parameter
+     * @throws \Aimeos\Controller\Jobs\Exception If method call failed
+     */
+    public function __call(string $name, array $param)
+    {
+        throw new \Aimeos\Controller\Jobs\Exception(sprintf('Unable to call method "%1$s"', $name));
+    }
 
-	/**
-	 * Initializes the object.
-	 *
-	 * @param \Aimeos\MShop\ContextIface $context MShop context object
-	 * @param \Aimeos\Bootstrap $aimeos \Aimeos\Bootstrap main object
-	 */
-	public function __construct( \Aimeos\MShop\ContextIface $context, \Aimeos\Bootstrap $aimeos )
-	{
-		$this->context = $context;
-		$this->aimeos = $aimeos;
-	}
+    /**
+     * Returns the context object.
+     *
+     * @return \Aimeos\MShop\ContextIface Context object
+     */
+    protected function context(): \Aimeos\MShop\ContextIface
+    {
+        return $this->context;
+    }
 
+    /**
+     * Returns the \Aimeos\Bootstrap object.
+     *
+     * @return \Aimeos\Bootstrap \Aimeos\Bootstrap object
+     */
+    protected function getAimeos(): \Aimeos\Bootstrap
+    {
+        return $this->aimeos;
+    }
 
-	/**
-	 * Catch unknown methods
-	 *
-	 * @param string $name Name of the method
-	 * @param array $param List of method parameter
-	 * @throws \Aimeos\Controller\Jobs\Exception If method call failed
-	 */
-	public function __call( string $name, array $param )
-	{
-		throw new \Aimeos\Controller\Jobs\Exception( sprintf( 'Unable to call method "%1$s"', $name ) );
-	}
+    /**
+     * Returns the value from the list or the default value
+     *
+     * @param array $list Associative list of key/value pairs
+     * @param string $key Key for the value to retrieve
+     * @param mixed $default Default value if key isn't found
+     * @return mixed Value for the key in the list or the default value
+     */
+    protected function val(array $list, string $key, $default = null)
+    {
+        return isset($list[$key]) && ($value = trim($list[$key])) !== '' ? $value : $default;
+    }
 
+    /**
+     * Sends a mail with the given data to the configured e-mails
+     *
+     * @param string $subject Subject of the e-mail
+     * @param string $body Text body of the e-mail
+     * @return \Aimeos\Controller\Jobs\Iface Same object for fluent interface
+     */
+    protected function mail(string $subject, string $body): self
+    {
+        $config = $this->context->config();
 
-	/**
-	 * Returns the context object.
-	 *
-	 * @return \Aimeos\MShop\ContextIface Context object
-	 */
-	protected function context() : \Aimeos\MShop\ContextIface
-	{
-		return $this->context;
-	}
+        /** resource/email/from-name
+         * Name of the e-mail sender
+         *
+         * Should be the company or web site name
+         *
+         * @param string Sender name
+         * @see resource/email/from-email
+         */
+        $name = $config->get('resource/email/from-name');
 
+        /** resource/email/from-email
+         * E-Mail address of the sender
+         *
+         * Should be the e-mail address of the company or web site
+         *
+         * @param string E-Mail address
+         * @see resource/email/from-name
+         */
+        $email = $config->get('resource/email/from-email');
 
-	/**
-	 * Returns the \Aimeos\Bootstrap object.
-	 *
-	 * @return \Aimeos\Bootstrap \Aimeos\Bootstrap object
-	 */
-	protected function getAimeos() : \Aimeos\Bootstrap
-	{
-		return $this->aimeos;
-	}
+        /** controller/jobs/to-email
+         * Recipient e-mail address used when sending job e-mails
+         *
+         * Job controllers can send e-mails when they has finished of if an
+         * error occurred. This setting will be used as the recipient e-mail
+         * address for these e-mails.
+         *
+         * @param string E-mail address
+         * @since 2020.04
+         * @see controller/jobs/from-email
+         */
+        if (($to = $config->get('controller/jobs/to-email', $email)) == null) {
+            return $this;
+        }
 
+        $message = $this->context->mail()->create();
 
-	/**
-	 * Returns the value from the list or the default value
-	 *
-	 * @param array $list Associative list of key/value pairs
-	 * @param string $key Key for the value to retrieve
-	 * @param mixed $default Default value if key isn't found
-	 * @return mixed Value for the key in the list or the default value
-	 */
-	protected function val( array $list, string $key, $default = null )
-	{
-		return isset( $list[$key] ) && ( $value = trim( $list[$key] ) ) !== '' ? $value : $default;
-	}
+        foreach ((array) $to as $addr) {
+            $message->to($addr);
+        }
 
+        /** controller/jobs/from-email
+         * Sender e-mail address used when sending job e-mails
+         *
+         * Job controllers can send e-mails when they has finished of if an
+         * error occurred. This setting will be used as the sender e-mail
+         * address in these e-mails.
+         *
+         * @param string E-mail address
+         * @since 2020.04
+         * @see controller/jobs/to-email
+         */
+        if ($from = $config->get('controller/jobs/from-email', $email)) {
+            $message->from($from, $name);
+        }
 
-	/**
-	 * Sends a mail with the given data to the configured e-mails
-	 *
-	 * @param string $subject Subject of the e-mail
-	 * @param string $body Text body of the e-mail
-	 * @return \Aimeos\Controller\Jobs\Iface Same object for fluent interface
-	 */
-	protected function mail( string $subject, string $body ) : self
-	{
-		$config = $this->context->config();
+        $message->subject($subject)->text($body)->send();
 
-		/** resource/email/from-name
-		 * Name of the e-mail sender
-		 *
-		 * Should be the company or web site name
-		 *
-		 * @param string Sender name
-		 * @see resource/email/from-email
-		 */
-		$name = $config->get( 'resource/email/from-name' );
-
-		/** resource/email/from-email
-		 * E-Mail address of the sender
-		 *
-		 * Should be the e-mail address of the company or web site
-		 *
-		 * @param string E-Mail address
-		 * @see resource/email/from-name
-		 */
-		$email = $config->get( 'resource/email/from-email' );
-
-		/** controller/jobs/to-email
-		 * Recipient e-mail address used when sending job e-mails
-		 *
-		 * Job controllers can send e-mails when they has finished of if an
-		 * error occurred. This setting will be used as the recipient e-mail
-		 * address for these e-mails.
-		 *
-		 * @param string E-mail address
-		 * @since 2020.04
-		 * @see controller/jobs/from-email
-		 */
-		if( ( $to = $config->get( 'controller/jobs/to-email', $email ) ) == null ) {
-			return $this;
-		}
-
-		$message = $this->context->mail()->create();
-
-		foreach( (array) $to as $addr ) {
-			$message->to( $addr );
-		}
-
-		/** controller/jobs/from-email
-		 * Sender e-mail address used when sending job e-mails
-		 *
-		 * Job controllers can send e-mails when they has finished of if an
-		 * error occurred. This setting will be used as the sender e-mail
-		 * address in these e-mails.
-		 *
-		 * @param string E-mail address
-		 * @since 2020.04
-		 * @see controller/jobs/to-email
-		 */
-		if( $from = $config->get( 'controller/jobs/from-email', $email ) ) {
-			$message->from( $from, $name );
-		}
-
-		$message->subject( $subject )->text( $body )->send();
-
-		return $this;
-	}
+        return $this;
+    }
 }

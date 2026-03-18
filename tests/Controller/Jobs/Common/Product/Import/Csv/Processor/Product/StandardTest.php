@@ -1,235 +1,220 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2015-2026
  */
 
-
 namespace Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Product;
-
 
 class StandardTest extends \PHPUnit\Framework\TestCase
 {
-	private $context;
-	private $endpoint;
-	private $products;
+    private $context;
+    private $endpoint;
+    private $products;
 
+    protected function setUp(): void
+    {
+        \Aimeos\MShop::cache(true);
 
-	protected function setUp() : void
-	{
-		\Aimeos\MShop::cache( true );
+        $this->context = \TestHelper::context();
+        $this->endpoint = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Done($this->context, []);
 
-		$this->context = \TestHelper::context();
-		$this->endpoint = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Done( $this->context, [] );
+        $manager = \Aimeos\MShop::create($this->context, 'product');
+        $search = $manager->filter();
+        $search->setConditions($search->compare('==', 'product.code', ['CNC', 'CNE']));
 
-		$manager = \Aimeos\MShop::create( $this->context, 'product' );
-		$search = $manager->filter();
-		$search->setConditions( $search->compare( '==', 'product.code', ['CNC', 'CNE'] ) );
+        $this->products = [];
+        foreach ($manager->search($search) as $id => $item) {
+            $this->products[$item->getCode()] = $id;
+        }
+    }
 
-		$this->products = [];
-		foreach( $manager->search( $search ) as $id => $item ) {
-			$this->products[$item->getCode()] = $id;
-		}
-	}
+    protected function tearDown(): void
+    {
+        \Aimeos\MShop::cache(false);
+    }
 
+    public function testProcess()
+    {
+        $mapping = [
+            0 => 'product.lists.type',
+            1 => 'product.code',
+            2 => 'product.lists.type',
+            3 => 'product.code',
+        ];
 
-	protected function tearDown() : void
-	{
-		\Aimeos\MShop::cache( false );
-	}
+        $data = [
+            0 => 'default',
+            1 => 'CNC',
+            2 => 'suggestion',
+            3 => 'CNE',
+        ];
 
+        $product = $this->create('job_csv_test');
 
-	public function testProcess()
-	{
-		$mapping = array(
-			0 => 'product.lists.type',
-			1 => 'product.code',
-			2 => 'product.lists.type',
-			3 => 'product.code',
-		);
+        $object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Product\Standard($this->context, $mapping, $this->endpoint);
+        $object->process($product, $data);
 
-		$data = array(
-			0 => 'default',
-			1 => 'CNC',
-			2 => 'suggestion',
-			3 => 'CNE',
-		);
+        $listItems1 = $product->getListItems('product', 'default');
+        $listItems2 = $product->getListItems('product', 'suggestion');
 
-		$product = $this->create( 'job_csv_test' );
+        $this->assertEquals(1, count($listItems1));
+        $this->assertEquals(1, count($listItems2));
 
-		$object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Product\Standard( $this->context, $mapping, $this->endpoint );
-		$object->process( $product, $data );
+        $this->assertEquals(1, $listItems1->first()->getStatus());
+        $this->assertEquals(1, $listItems2->first()->getStatus());
 
+        $this->assertEquals($this->products['CNC'], $listItems1->first()->getRefId());
+        $this->assertEquals($this->products['CNE'], $listItems2->first()->getRefId());
+    }
 
-		$listItems1 = $product->getListItems( 'product', 'default' );
-		$listItems2 = $product->getListItems( 'product', 'suggestion' );
+    public function testProcessMultiple()
+    {
+        $mapping = [
+            0 => 'product.lists.type',
+            1 => 'product.code',
+        ];
 
-		$this->assertEquals( 1, count( $listItems1 ) );
-		$this->assertEquals( 1, count( $listItems2 ) );
+        $data = [
+            0 => 'default',
+            1 => "CNC\nCNE",
+        ];
 
-		$this->assertEquals( 1, $listItems1->first()->getStatus() );
-		$this->assertEquals( 1, $listItems2->first()->getStatus() );
+        $product = $this->create('job_csv_test');
 
-		$this->assertEquals( $this->products['CNC'], $listItems1->first()->getRefId() );
-		$this->assertEquals( $this->products['CNE'], $listItems2->first()->getRefId() );
-	}
+        $object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Product\Standard($this->context, $mapping, $this->endpoint);
+        $object->process($product, $data);
 
+        $pos = 0;
+        $listItems = $product->getListItems();
+        $prodIds = [ $this->products['CNC'], $this->products['CNE'] ];
 
-	public function testProcessMultiple()
-	{
-		$mapping = array(
-			0 => 'product.lists.type',
-			1 => 'product.code',
-		);
+        $this->assertEquals(2, count($listItems));
 
-		$data = array(
-			0 => 'default',
-			1 => "CNC\nCNE",
-		);
+        foreach ($listItems as $listItem) {
+            $this->assertEquals(1, $listItem->getStatus());
+            $this->assertEquals('product', $listItem->getDomain());
+            $this->assertEquals('default', $listItem->getType());
+            $this->assertEquals($prodIds[$pos], $listItem->getRefId());
+            $pos++;
+        }
+    }
 
-		$product = $this->create( 'job_csv_test' );
+    public function testProcessUpdate()
+    {
+        $mapping = [
+            0 => 'product.lists.type',
+            1 => 'product.code',
+        ];
 
-		$object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Product\Standard( $this->context, $mapping, $this->endpoint );
-		$object->process( $product, $data );
+        $data = [
+            0 => 'default',
+            1 => 'CNC',
+        ];
 
+        $dataUpdate = [
+            0 => 'default',
+            1 => 'CNE',
+        ];
 
-		$pos = 0;
-		$listItems = $product->getListItems();
-		$prodIds = array( $this->products['CNC'], $this->products['CNE'] );
+        $product = $this->create('job_csv_test');
 
-		$this->assertEquals( 2, count( $listItems ) );
+        $object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Product\Standard($this->context, $mapping, $this->endpoint);
+        $object->process($product, $data);
+        $object->process($product, $dataUpdate);
 
-		foreach( $listItems as $listItem )
-		{
-			$this->assertEquals( 1, $listItem->getStatus() );
-			$this->assertEquals( 'product', $listItem->getDomain() );
-			$this->assertEquals( 'default', $listItem->getType() );
-			$this->assertEquals( $prodIds[$pos], $listItem->getRefId() );
-			$pos++;
-		}
-	}
+        $listItems = $product->getListItems();
+        $listItem = $listItems->first();
 
+        $this->assertEquals(1, count($listItems));
+        $this->assertInstanceOf('\\Aimeos\\MShop\\Common\\Item\\Lists\\Iface', $listItem);
 
-	public function testProcessUpdate()
-	{
-		$mapping = array(
-			0 => 'product.lists.type',
-			1 => 'product.code',
-		);
+        $this->assertEquals($this->products['CNE'], $listItem->getRefId());
+    }
 
-		$data = array(
-			0 => 'default',
-			1 => 'CNC',
-		);
+    public function testProcessDelete()
+    {
+        $mapping = [
+            0 => 'product.lists.type',
+            1 => 'product.code',
+        ];
 
-		$dataUpdate = array(
-			0 => 'default',
-			1 => 'CNE',
-		);
+        $data = [
+            0 => 'default',
+            1 => 'CNC',
+        ];
 
-		$product = $this->create( 'job_csv_test' );
+        $product = $this->create('job_csv_test');
 
-		$object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Product\Standard( $this->context, $mapping, $this->endpoint );
-		$object->process( $product, $data );
-		$object->process( $product, $dataUpdate );
+        $object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Product\Standard($this->context, $mapping, $this->endpoint);
+        $object->process($product, $data);
 
+        $object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Product\Standard($this->context, [], $this->endpoint);
+        $object->process($product, []);
 
-		$listItems = $product->getListItems();
-		$listItem = $listItems->first();
+        $this->assertEquals(0, count($product->getListItems()));
+    }
 
-		$this->assertEquals( 1, count( $listItems ) );
-		$this->assertInstanceOf( '\\Aimeos\\MShop\\Common\\Item\\Lists\\Iface', $listItem );
+    public function testProcessEmpty()
+    {
+        $mapping = [
+            0 => 'product.lists.type',
+            1 => 'product.code',
+            2 => 'product.lists.type',
+            3 => 'product.code',
+        ];
 
-		$this->assertEquals( $this->products['CNE'], $listItem->getRefId() );
-	}
+        $data = [
+            0 => '',
+            1 => '',
+            2 => 'default',
+            3 => 'CNE',
+        ];
 
+        $product = $this->create('job_csv_test');
 
-	public function testProcessDelete()
-	{
-		$mapping = array(
-			0 => 'product.lists.type',
-			1 => 'product.code',
-		);
+        $object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Product\Standard($this->context, $mapping, $this->endpoint);
+        $object->process($product, $data);
 
-		$data = array(
-			0 => 'default',
-			1 => 'CNC',
-		);
+        $listItems = $product->getListItems();
 
-		$product = $this->create( 'job_csv_test' );
+        $this->assertEquals(1, count($listItems));
+    }
 
-		$object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Product\Standard( $this->context, $mapping, $this->endpoint );
-		$object->process( $product, $data );
+    public function testProcessListtypes()
+    {
+        $mapping = [
+            0 => 'product.lists.type',
+            1 => 'product.code',
+            2 => 'product.lists.type',
+            3 => 'product.code',
+        ];
 
-		$object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Product\Standard( $this->context, [], $this->endpoint );
-		$object->process( $product, [] );
+        $data = [
+            0 => 'bought-together',
+            1 => 'CNC',
+            2 => 'default',
+            3 => 'CNE',
+        ];
 
+        $this->context->config()->set('controller/jobs/product/import/csv/processor/product/listtypes', [ 'default' ]);
 
-		$this->assertEquals( 0, count( $product->getListItems() ) );
-	}
+        $product = $this->create('job_csv_test');
 
+        $object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Product\Standard($this->context, $mapping, $this->endpoint);
 
-	public function testProcessEmpty()
-	{
-		$mapping = array(
-			0 => 'product.lists.type',
-			1 => 'product.code',
-			2 => 'product.lists.type',
-			3 => 'product.code',
-		);
+        $this->expectException('\Aimeos\Controller\Jobs\Exception');
+        $object->process($product, $data);
+    }
 
-		$data = array(
-			0 => '',
-			1 => '',
-			2 => 'default',
-			3 => 'CNE',
-		);
-
-		$product = $this->create( 'job_csv_test' );
-
-		$object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Product\Standard( $this->context, $mapping, $this->endpoint );
-		$object->process( $product, $data );
-
-
-		$listItems = $product->getListItems();
-
-		$this->assertEquals( 1, count( $listItems ) );
-	}
-
-
-	public function testProcessListtypes()
-	{
-		$mapping = array(
-			0 => 'product.lists.type',
-			1 => 'product.code',
-			2 => 'product.lists.type',
-			3 => 'product.code',
-		);
-
-		$data = array(
-			0 => 'bought-together',
-			1 => 'CNC',
-			2 => 'default',
-			3 => 'CNE',
-		);
-
-		$this->context->config()->set( 'controller/jobs/product/import/csv/processor/product/listtypes', array( 'default' ) );
-
-		$product = $this->create( 'job_csv_test' );
-
-		$object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Product\Standard( $this->context, $mapping, $this->endpoint );
-
-		$this->expectException( '\Aimeos\Controller\Jobs\Exception' );
-		$object->process( $product, $data );
-	}
-
-
-	/**
-	 * @param string $code
-	 */
-	protected function create( $code )
-	{
-		return \Aimeos\MShop::create( $this->context, 'product' )->create()->setCode( $code );
-	}
+    /**
+     * @param string $code
+     */
+    protected function create($code)
+    {
+        return \Aimeos\MShop::create($this->context, 'product')->create()->setCode($code);
+    }
 }

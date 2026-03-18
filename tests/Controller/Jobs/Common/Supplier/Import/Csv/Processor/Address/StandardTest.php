@@ -1,228 +1,218 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2015-2026
  */
 
-
 namespace Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Address;
-
 
 class StandardTest extends \PHPUnit\Framework\TestCase
 {
-	private $context;
-	private $endpoint;
-	private $manager;
+    private $context;
+    private $endpoint;
+    private $manager;
 
+    protected function setUp(): void
+    {
+        \Aimeos\MShop::cache(true);
 
-	protected function setUp() : void
-	{
-		\Aimeos\MShop::cache( true );
+        $this->context = \TestHelper::context();
+        $this->manager = \Aimeos\MShop::create($this->context, 'supplier');
+        $this->endpoint = new \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Done($this->context, []);
+    }
 
-		$this->context = \TestHelper::context();
-		$this->manager = \Aimeos\MShop::create( $this->context, 'supplier' );
-		$this->endpoint = new \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Done( $this->context, [] );
-	}
+    protected function tearDown(): void
+    {
+        \Aimeos\MShop::cache(false);
+    }
 
+    public function testProcess()
+    {
+        $mapping = [
+            0 => 'supplier.address.languageid',
+            1 => 'supplier.address.countryid',
+            2 => 'supplier.address.city',
+            3 => 'supplier.address.firstname',
+            4 => 'supplier.address.lastname',
+            5 => 'supplier.address.email',
+        ];
 
-	protected function tearDown() : void
-	{
-		\Aimeos\MShop::cache( false );
-	}
+        $data = [
+            0 => 'de',
+            1 => 'de',
+            2 => 'Berlin',
+            3 => 'John',
+            4 => 'Dummy',
+            5 => 'john@dummies-domains.de',
+        ];
 
+        $supplier = $this->create('job_csv_test');
 
-	public function testProcess()
-	{
-		$mapping = array(
-			0 => 'supplier.address.languageid',
-			1 => 'supplier.address.countryid',
-			2 => 'supplier.address.city',
-			3 => 'supplier.address.firstname',
-			4 => 'supplier.address.lastname',
-			5 => 'supplier.address.email',
-		);
+        $object = new \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Address\Standard($this->context, $mapping, $this->endpoint);
+        $object->process($supplier, $data);
 
-		$data = array(
-			0 => 'de',
-			1 => 'de',
-			2 => 'Berlin',
-			3 => 'John',
-			4 => 'Dummy',
-			5 => 'john@dummies-domains.de',
-		);
+        $addressItems = $supplier->getAddressItems();
+        $address = $addressItems->first();
 
-		$supplier = $this->create( 'job_csv_test' );
+        $this->assertInstanceOf('\\Aimeos\\MShop\\Supplier\\Item\\Address\\Iface', $address);
+        $this->assertEquals(1, count($addressItems));
 
-		$object = new \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Address\Standard( $this->context, $mapping, $this->endpoint );
-		$object->process( $supplier, $data );
+        $this->assertEquals('de', $address->getLanguageid());
+        $this->assertEquals('DE', $address->getCountryid());
+        $this->assertEquals('Berlin', $address->getCity());
+        $this->assertEquals('John', $address->getFirstname());
+        $this->assertEquals('Dummy', $address->getLastname());
+        $this->assertEquals('john@dummies-domains.de', $address->getEmail());
+    }
 
-		$addressItems = $supplier->getAddressItems();
-		$address = $addressItems->first();
+    public function testProcessMultiple()
+    {
+        $mapping = [
+            0 => 'supplier.address.languageid',
+            1 => 'supplier.address.countryid',
+            2 => 'supplier.address.city',
+            3 => 'supplier.address.languageid',
+            4 => 'supplier.address.countryid',
+            5 => 'supplier.address.city',
+            6 => 'supplier.address.languageid',
+            7 => 'supplier.address.countryid',
+            8 => 'supplier.address.city',
+        ];
 
-		$this->assertInstanceOf( '\\Aimeos\\MShop\\Supplier\\Item\\Address\\Iface', $address );
-		$this->assertEquals( 1, count( $addressItems ) );
+        $data = [
+            0 => 'de',
+            1 => 'DE',
+            2 => 'Berlin',
+            3 => 'en',
+            4 => 'US',
+            5 => 'Washington',
+            6 => 'fr',
+            7 => 'FR',
+            8 => 'Paris',
+        ];
 
-		$this->assertEquals( 'de', $address->getLanguageid() );
-		$this->assertEquals( 'DE', $address->getCountryid() );
-		$this->assertEquals( 'Berlin', $address->getCity() );
-		$this->assertEquals( 'John', $address->getFirstname() );
-		$this->assertEquals( 'Dummy', $address->getLastname() );
-		$this->assertEquals( 'john@dummies-domains.de', $address->getEmail() );
-	}
+        $supplier = $this->create('job_csv_test');
 
+        $object = new \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Address\Standard($this->context, $mapping, $this->endpoint);
+        $object->process($supplier, $data);
 
-	public function testProcessMultiple()
-	{
-		$mapping = array(
-			0 => 'supplier.address.languageid',
-			1 => 'supplier.address.countryid',
-			2 => 'supplier.address.city',
-			3 => 'supplier.address.languageid',
-			4 => 'supplier.address.countryid',
-			5 => 'supplier.address.city',
-			6 => 'supplier.address.languageid',
-			7 => 'supplier.address.countryid',
-			8 => 'supplier.address.city',
-		);
+        $pos = 0;
+        $addrItems = $supplier->getAddressItems();
+        $expected = [
+            0 => [ 'de', 'DE', 'Berlin' ],
+            1 => [ 'en', 'US', 'Washington' ],
+            2 => [ 'fr', 'FR', 'Paris' ],
+        ];
 
-		$data = array(
-			0 => 'de',
-			1 => 'DE',
-			2 => 'Berlin',
-			3 => 'en',
-			4 => 'US',
-			5 => 'Washington',
-			6 => 'fr',
-			7 => 'FR',
-			8 => 'Paris',
-		);
+        $this->assertEquals(3, count($addrItems));
 
-		$supplier = $this->create( 'job_csv_test' );
+        foreach ($addrItems as $addrItem) {
+            $this->assertEquals($expected[$pos][0], $addrItem->getLanguageId());
+            $this->assertEquals($expected[$pos][1], $addrItem->getCountryId());
+            $this->assertEquals($expected[$pos][2], $addrItem->getCity());
+            $pos++;
+        }
+    }
 
-		$object = new \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Address\Standard( $this->context, $mapping, $this->endpoint );
-		$object->process( $supplier, $data );
+    public function testProcessUpdate()
+    {
+        $mapping = [
+            0 => 'supplier.address.languageid',
+            1 => 'supplier.address.countryid',
+            2 => 'supplier.address.city',
+        ];
 
+        $data = [
+            0 => 'de',
+            1 => 'de',
+            2 => 'Berlin',
+        ];
 
-		$pos = 0;
-		$addrItems = $supplier->getAddressItems();
-		$expected = array(
-			0 => array( 'de', 'DE', 'Berlin' ),
-			1 => array( 'en', 'US', 'Washington' ),
-			2 => array( 'fr', 'FR', 'Paris' ),
-		);
+        $dataUpdate = [
+            0 => 'ru',
+            1 => 'ru',
+            2 => 'Moscow',
+        ];
 
-		$this->assertEquals( 3, count( $addrItems ) );
+        $supplier = $this->create('job_csv_test');
 
-		foreach( $addrItems as $addrItem )
-		{
-			$this->assertEquals( $expected[$pos][0], $addrItem->getLanguageId() );
-			$this->assertEquals( $expected[$pos][1], $addrItem->getCountryId() );
-			$this->assertEquals( $expected[$pos][2], $addrItem->getCity() );
-			$pos++;
-		}
-	}
+        $object = new \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Address\Standard($this->context, $mapping, $this->endpoint);
+        $object->process($supplier, $data);
+        $object->process($supplier, $dataUpdate);
 
+        $addressItems = $supplier->getAddressItems();
+        $address = $addressItems->first();
 
-	public function testProcessUpdate()
-	{
-		$mapping = array(
-			0 => 'supplier.address.languageid',
-			1 => 'supplier.address.countryid',
-			2 => 'supplier.address.city',
-		);
+        $this->assertEquals(1, count($addressItems));
+        $this->assertInstanceOf('\\Aimeos\\MShop\\Supplier\\Item\\Address\\Iface', $address);
 
-		$data = array(
-			0 => 'de',
-			1 => 'de',
-			2 => 'Berlin',
-		);
+        $this->assertEquals('ru', $address->getLanguageid());
+        $this->assertEquals('RU', $address->getCountryid());
+        $this->assertEquals('Moscow', $address->getCity());
+    }
 
-		$dataUpdate = array(
-			0 => 'ru',
-			1 => 'ru',
-			2 => 'Moscow',
-		);
+    public function testProcessDelete()
+    {
+        $mapping = [
+            0 => 'address.type',
+            1 => 'address.content',
+        ];
 
-		$supplier = $this->create( 'job_csv_test' );
+        $data = [
+            0 => 'name',
+            1 => 'Job CSV test',
+        ];
 
-		$object = new \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Address\Standard( $this->context, $mapping, $this->endpoint );
-		$object->process( $supplier, $data );
-		$object->process( $supplier, $dataUpdate );
+        $supplier = $this->create('job_csv_test');
 
-		$addressItems = $supplier->getAddressItems();
-		$address = $addressItems->first();
+        $object = new \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Address\Standard($this->context, $mapping, $this->endpoint);
+        $object->process($supplier, $data);
 
-		$this->assertEquals( 1, count( $addressItems ) );
-		$this->assertInstanceOf( '\\Aimeos\\MShop\\Supplier\\Item\\Address\\Iface', $address );
+        $object = new \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Address\Standard($this->context, [], $this->endpoint);
+        $object->process($supplier, []);
 
-		$this->assertEquals( 'ru', $address->getLanguageid() );
-		$this->assertEquals( 'RU', $address->getCountryid() );
-		$this->assertEquals( 'Moscow', $address->getCity() );
-	}
+        $listItems = $supplier->getListItems();
+        $this->assertEquals(0, count($listItems));
+    }
 
-	public function testProcessDelete()
-	{
-		$mapping = array(
-			0 => 'address.type',
-			1 => 'address.content',
-		);
+    public function testProcessEmpty()
+    {
+        $mapping = [
+            0 => 'supplier.address.languageid',
+            1 => 'supplier.address.countryid',
+            2 => 'supplier.address.city',
+            3 => 'supplier.address.languageid',
+            4 => 'supplier.address.countryid',
+            5 => 'supplier.address.city',
+        ];
 
-		$data = array(
-			0 => 'name',
-			1 => 'Job CSV test',
-		);
+        $data = [
+            0 => 'de',
+            1 => 'de',
+            2 => 'Berlin',
+            3 => '',
+            4 => '',
+            5 => '',
+        ];
 
-		$supplier = $this->create( 'job_csv_test' );
+        $supplier = $this->create('job_csv_test');
 
-		$object = new \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Address\Standard( $this->context, $mapping, $this->endpoint );
-		$object->process( $supplier, $data );
+        $object = new \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Address\Standard($this->context, $mapping, $this->endpoint);
+        $object->process($supplier, $data);
 
-		$object = new \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Address\Standard( $this->context, [], $this->endpoint );
-		$object->process( $supplier, [] );
+        $listItems = $supplier->getAddressItems();
 
+        $this->assertEquals(1, count($listItems));
+    }
 
-		$listItems = $supplier->getListItems();
-		$this->assertEquals( 0, count( $listItems ) );
-	}
-
-
-	public function testProcessEmpty()
-	{
-		$mapping = array(
-			0 => 'supplier.address.languageid',
-			1 => 'supplier.address.countryid',
-			2 => 'supplier.address.city',
-			3 => 'supplier.address.languageid',
-			4 => 'supplier.address.countryid',
-			5 => 'supplier.address.city',
-		);
-
-		$data = array(
-			0 => 'de',
-			1 => 'de',
-			2 => 'Berlin',
-			3 => '',
-			4 => '',
-			5 => '',
-		);
-
-		$supplier = $this->create( 'job_csv_test' );
-
-		$object = new \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Address\Standard( $this->context, $mapping, $this->endpoint );
-		$object->process( $supplier, $data );
-
-		$listItems = $supplier->getAddressItems();
-
-		$this->assertEquals( 1, count( $listItems ) );
-	}
-
-
-	/**
-	 * @param string $code
-	 */
-	protected function create( $code )
-	{
-		return $this->manager->create()->setCode( $code );
-	}
+    /**
+     * @param string $code
+     */
+    protected function create($code)
+    {
+        return $this->manager->create()->setCode($code);
+    }
 }

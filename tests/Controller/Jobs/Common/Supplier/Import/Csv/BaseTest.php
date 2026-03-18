@@ -1,95 +1,83 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2015-2026
  */
 
-
 namespace Aimeos\Controller\Jobs\Common\Supplier\Import\Csv;
-
 
 class BaseTest extends \PHPUnit\Framework\TestCase
 {
-	private $object;
+    private $object;
 
+    protected function setUp(): void
+    {
+        \Aimeos\MShop::cache(true);
 
-	protected function setUp() : void
-	{
-		\Aimeos\MShop::cache( true );
+        $context = \TestHelper::context();
+        $aimeos = \TestHelper::getAimeos();
 
-		$context = \TestHelper::context();
-		$aimeos = \TestHelper::getAimeos();
+        $this->object = new TestAbstract($context, $aimeos);
+    }
 
-		$this->object = new TestAbstract( $context, $aimeos );
-	}
+    protected function tearDown(): void
+    {
+        \Aimeos\MShop::cache(false);
+    }
 
+    public function testGetCacheInvalidType()
+    {
+        $this->expectException(\LogicException::class);
+        $this->object->getCachePublic('$');
+    }
 
-	protected function tearDown() : void
-	{
-		\Aimeos\MShop::cache( false );
-	}
+    public function testGetCacheInvalidClass()
+    {
+        $this->expectException(\LogicException::class);
+        $this->object->getCachePublic('unknown');
+    }
 
+    public function testGetProcessors()
+    {
+        $processor = $this->object->getProcessorsPublic([ 'media' => [] ]);
 
-	public function testGetCacheInvalidType()
-	{
-		$this->expectException( \LogicException::class );
-		$this->object->getCachePublic( '$' );
-	}
+        $this->assertInstanceOf('\\Aimeos\\Controller\\Jobs\\Common\\Supplier\\Import\\Csv\\Processor\\Iface', $processor);
+    }
 
+    public function testGetProcessorsInvalidType()
+    {
+        $this->expectException(\LogicException::class);
+        $this->object->getProcessorsPublic([ '$' => [] ]);
+    }
 
-	public function testGetCacheInvalidClass()
-	{
-		$this->expectException( \LogicException::class );
-		$this->object->getCachePublic( 'unknown' );
-	}
+    public function testGetProcessorsInvalidClass()
+    {
+        $this->expectException(\LogicException::class);
+        $this->object->getProcessorsPublic([ 'unknown' => [] ]);
+    }
 
-
-	public function testGetProcessors()
-	{
-		$processor = $this->object->getProcessorsPublic( array( 'media' => [] ) );
-
-		$this->assertInstanceOf( '\\Aimeos\\Controller\\Jobs\\Common\\Supplier\\Import\\Csv\\Processor\\Iface', $processor );
-	}
-
-
-	public function testGetProcessorsInvalidType()
-	{
-		$this->expectException( \LogicException::class );
-		$this->object->getProcessorsPublic( array( '$' => [] ) );
-	}
-
-
-	public function testGetProcessorsInvalidClass()
-	{
-		$this->expectException( \LogicException::class );
-		$this->object->getProcessorsPublic( array( 'unknown' => [] ) );
-	}
-
-
-	public function testGetProcessorsInvalidInterface()
-	{
-		$this->expectException( \LogicException::class );
-		$this->object->getProcessorsPublic( array( 'unknown' => [] ) );
-	}
+    public function testGetProcessorsInvalidInterface()
+    {
+        $this->expectException(\LogicException::class);
+        $this->object->getProcessorsPublic([ 'unknown' => [] ]);
+    }
 }
 
-
-class TestAbstract
-	extends \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Base
+class TestAbstract extends \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Base
 {
-	public function getCachePublic( $type, $name = null )
-	{
-		return $this->getCache( $type, $name );
-	}
+    public function getCachePublic($type, $name = null)
+    {
+        return $this->getCache($type, $name);
+    }
 
-
-	public function getProcessorsPublic( array $mappings )
-	{
-		return $this->getProcessors( $mappings );
-	}
+    public function getProcessorsPublic(array $mappings)
+    {
+        return $this->getProcessors($mappings);
+    }
 }
-
 
 class TestInvalid
 {

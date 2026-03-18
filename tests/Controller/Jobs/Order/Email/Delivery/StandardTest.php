@@ -1,186 +1,172 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2015-2026
  */
 
-
 namespace Aimeos\Controller\Jobs\Order\Email\Delivery;
-
 
 class StandardTest extends \PHPUnit\Framework\TestCase
 {
-	private $context;
-	private $object;
+    private $context;
+    private $object;
 
+    protected function setUp(): void
+    {
+        \Aimeos\MShop::cache(true);
 
-	protected function setUp() : void
-	{
-		\Aimeos\MShop::cache( true );
+        $aimeos = \TestHelper::getAimeos();
+        $this->context = \TestHelper::context();
 
-		$aimeos = \TestHelper::getAimeos();
-		$this->context = \TestHelper::context();
+        $this->object = new \Aimeos\Controller\Jobs\Order\Email\Delivery\Standard($this->context, $aimeos);
+    }
 
-		$this->object = new \Aimeos\Controller\Jobs\Order\Email\Delivery\Standard( $this->context, $aimeos );
-	}
+    protected function tearDown(): void
+    {
+        \Aimeos\MShop::cache(false);
+        unset($this->object);
+    }
 
+    public function testGetName()
+    {
+        $this->assertEquals('Order delivery related e-mails', $this->object->getName());
+    }
 
-	protected function tearDown() : void
-	{
-		\Aimeos\MShop::cache( false );
-		unset( $this->object );
-	}
+    public function testGetDescription()
+    {
+        $text = 'Sends order delivery status update e-mails';
+        $this->assertEquals($text, $this->object->getDescription());
+    }
 
+    public function testRun()
+    {
+        $orderManagerStub = $this->getMockBuilder('\\Aimeos\\MShop\\Order\\Manager\\Standard')
+            ->setConstructorArgs([$this->context])
+            ->onlyMethods(['iterate'])
+            ->getMock();
 
-	public function testGetName()
-	{
-		$this->assertEquals( 'Order delivery related e-mails', $this->object->getName() );
-	}
+        \Aimeos\MShop::inject('\\Aimeos\\MShop\\Order\\Manager\\Standard', $orderManagerStub);
 
+        $orderItem = $orderManagerStub->create();
 
-	public function testGetDescription()
-	{
-		$text = 'Sends order delivery status update e-mails';
-		$this->assertEquals( $text, $this->object->getDescription() );
-	}
+        $orderManagerStub->expects($this->exactly(5))->method('iterate')
+            ->willReturn(map([$orderItem]), null, null, null, null);
 
+        $object = $this->getMockBuilder(\Aimeos\Controller\Jobs\Order\Email\Delivery\Standard::class)
+            ->setConstructorArgs([$this->context, \TestHelper::getAimeos()])
+            ->onlyMethods(['notify'])
+            ->getMock();
 
-	public function testRun()
-	{
-		$orderManagerStub = $this->getMockBuilder( '\\Aimeos\\MShop\\Order\\Manager\\Standard' )
-			->setConstructorArgs( [$this->context] )
-			->onlyMethods( ['iterate'] )
-			->getMock();
+        $object->expects($this->once())->method('notify');
 
-		\Aimeos\MShop::inject( '\\Aimeos\\MShop\\Order\\Manager\\Standard', $orderManagerStub );
+        $object->run();
+    }
 
-		$orderItem = $orderManagerStub->create();
+    public function testAddress()
+    {
+        $manager = \Aimeos\MShop::create($this->context, 'order');
+        $addrManager = \Aimeos\MShop::create($this->context, 'order/address');
 
-		$orderManagerStub->expects( $this->exactly( 5 ) )->method( 'iterate' )
-			->willReturn( map( [$orderItem] ), null, null, null, null );
+        $item = $manager->create();
+        $item->addAddress($addrManager->create(), 'delivery');
+        $item->addAddress($addrManager->create()->setEmail('a@b.com'), 'payment');
 
-		$object = $this->getMockBuilder( \Aimeos\Controller\Jobs\Order\Email\Delivery\Standard::class )
-			->setConstructorArgs( [$this->context, \TestHelper::getAimeos()] )
-			->onlyMethods( ['notify'] )
-			->getMock();
+        $result = $this->access('address')->invokeArgs($this->object, [$item]);
 
-		$object->expects( $this->once() )->method( 'notify' );
+        $this->assertInstanceof(\Aimeos\MShop\Order\Item\Address\Iface::class, $result);
+    }
 
-		$object->run();
-	}
+    public function testAddressNone()
+    {
+        $manager = \Aimeos\MShop::create($this->context, 'order');
 
+        $this->expectException(\Aimeos\Controller\Jobs\Exception::class);
+        $this->access('address')->invokeArgs($this->object, [$manager->create()]);
+    }
 
-	public function testAddress()
-	{
-		$manager = \Aimeos\MShop::create( $this->context, 'order' );
-		$addrManager = \Aimeos\MShop::create( $this->context, 'order/address' );
+    public function testNotify()
+    {
+        $object = $this->getMockBuilder(\Aimeos\Controller\Jobs\Order\Email\Delivery\Standard::class)
+            ->setConstructorArgs([$this->context, \TestHelper::getAimeos()])
+            ->onlyMethods(['update', 'send'])
+            ->getMock();
 
-		$item = $manager->create();
-		$item->addAddress( $addrManager->create(), 'delivery' );
-		$item->addAddress( $addrManager->create()->setEmail( 'a@b.com' ), 'payment' );
+        $object->expects($this->once())->method('update');
+        $object->expects($this->once())->method('send');
 
-		$result = $this->access( 'address' )->invokeArgs( $this->object, [$item] );
+        $orderItem = \Aimeos\MShop::create($this->context, 'order')->create();
 
-		$this->assertInstanceof( \Aimeos\MShop\Order\Item\Address\Iface::class, $result );
-	}
+        $this->access('notify')->invokeArgs($object, [map([$orderItem]), -1]);
+    }
 
+    public function testNotifyException()
+    {
+        $object = $this->getMockBuilder(\Aimeos\Controller\Jobs\Order\Email\Delivery\Standard::class)
+            ->setConstructorArgs([$this->context, \TestHelper::getAimeos()])
+            ->onlyMethods(['send'])
+            ->getMock();
 
-	public function testAddressNone()
-	{
-		$manager = \Aimeos\MShop::create( $this->context, 'order' );
+        $object->expects($this->once())->method('send')->will($this->throwException(new \RuntimeException()));
 
-		$this->expectException( \Aimeos\Controller\Jobs\Exception::class );
-		$this->access( 'address' )->invokeArgs( $this->object, [$manager->create()] );
-	}
+        $orderItem = \Aimeos\MShop::create($this->context, 'order')->create();
 
+        $this->access('notify')->invokeArgs($object, [map([$orderItem]), -1]);
+    }
 
-	public function testNotify()
-	{
-		$object = $this->getMockBuilder( \Aimeos\Controller\Jobs\Order\Email\Delivery\Standard::class )
-			->setConstructorArgs( [$this->context, \TestHelper::getAimeos()] )
-			->onlyMethods( ['update', 'send'] )
-			->getMock();
+    public function testSend()
+    {
+        $mailerStub = $this->getMockBuilder('\\Aimeos\\Base\\Mail\\Manager\\None')
+            ->disableOriginalConstructor()
+            ->getMock();
 
-		$object->expects( $this->once() )->method( 'update' );
-		$object->expects( $this->once() )->method( 'send' );
+        $mailStub = $this->getMockBuilder('\\Aimeos\\Base\\Mail\\None')
+            ->disableOriginalConstructor()
+            ->getMock();
 
+        $mailMsgStub = $this->getMockBuilder('\\Aimeos\\Base\\Mail\\Message\\None')
+            ->disableOriginalConstructor()
+            ->disableOriginalClone()
+            ->onlyMethods(['send'])
+            ->getMock();
 
-		$orderItem = \Aimeos\MShop::create( $this->context, 'order' )->create();
+        $mailerStub->expects($this->once())->method('get')->willReturn($mailStub);
+        $mailStub->expects($this->once())->method('create')->willReturn($mailMsgStub);
+        $mailMsgStub->expects($this->once())->method('send');
 
-		$this->access( 'notify' )->invokeArgs( $object, [map( [$orderItem] ), -1] );
-	}
+        $this->context->setMail($mailerStub);
 
+        $object = $this->getMockBuilder(\Aimeos\Controller\Jobs\Order\Email\Delivery\Standard::class)
+            ->setConstructorArgs([$this->context, \TestHelper::getAimeos()])
+            ->onlyMethods(['update'])
+            ->getMock();
 
-	public function testNotifyException()
-	{
-		$object = $this->getMockBuilder( \Aimeos\Controller\Jobs\Order\Email\Delivery\Standard::class )
-			->setConstructorArgs( [$this->context, \TestHelper::getAimeos()] )
-			->onlyMethods( ['send'] )
-			->getMock();
+        $addrItem = \Aimeos\MShop::create($this->context, 'order/address')->create()->setEmail('a@b.com');
+        $orderItem = \Aimeos\MShop::create($this->context, 'order')->create(['order.ctime' => '2000-01-01 00:00:00']);
 
-		$object->expects( $this->once() )->method( 'send' )->will( $this->throwException( new \RuntimeException() ) );
+        $orderItem->addAddress($addrItem, 'delivery');
 
-		$orderItem = \Aimeos\MShop::create( $this->context, 'order' )->create();
+        $this->access('send')->invokeArgs($object, [$orderItem]);
+    }
 
-		$this->access( 'notify' )->invokeArgs( $object, [map( [$orderItem] ), -1] );
-	}
+    public function testView()
+    {
+        $orderItem = \Aimeos\MShop::create($this->context, 'order')->create();
+        $addrItem = \Aimeos\MShop::create($this->context, 'order/address')->create()->setEmail('a@b.com');
 
+        $result = $this->access('view')->invokeArgs($this->object, [$orderItem->addAddress($addrItem, 'delivery')]);
 
-	public function testSend()
-	{
-		$mailerStub = $this->getMockBuilder( '\\Aimeos\\Base\\Mail\\Manager\\None' )
-			->disableOriginalConstructor()
-			->getMock();
+        $this->assertInstanceof(\Aimeos\Base\View\Iface::class, $result);
+    }
 
-		$mailStub = $this->getMockBuilder( '\\Aimeos\\Base\\Mail\\None' )
-			->disableOriginalConstructor()
-			->getMock();
+    protected function access($name)
+    {
+        $class = new \ReflectionClass(\Aimeos\Controller\Jobs\Order\Email\Delivery\Standard::class);
+        $method = $class->getMethod($name);
+        $method->setAccessible(true);
 
-		$mailMsgStub = $this->getMockBuilder( '\\Aimeos\\Base\\Mail\\Message\\None' )
-			->disableOriginalConstructor()
-			->disableOriginalClone()
-			->onlyMethods( ['send'] )
-			->getMock();
-
-		$mailerStub->expects( $this->once() )->method( 'get' )->willReturn( $mailStub );
-		$mailStub->expects( $this->once() )->method( 'create' )->willReturn( $mailMsgStub );
-		$mailMsgStub->expects( $this->once() )->method( 'send' );
-
-		$this->context->setMail( $mailerStub );
-
-
-		$object = $this->getMockBuilder( \Aimeos\Controller\Jobs\Order\Email\Delivery\Standard::class )
-			->setConstructorArgs( [$this->context, \TestHelper::getAimeos()] )
-			->onlyMethods( ['update'] )
-			->getMock();
-
-		$addrItem = \Aimeos\MShop::create( $this->context, 'order/address' )->create()->setEmail( 'a@b.com' );
-		$orderItem = \Aimeos\MShop::create( $this->context, 'order' )->create( ['order.ctime' => '2000-01-01 00:00:00'] );
-
-		$orderItem->addAddress( $addrItem, 'delivery' );
-
-		$this->access( 'send' )->invokeArgs( $object, [$orderItem] );
-	}
-
-
-	public function testView()
-	{
-		$orderItem = \Aimeos\MShop::create( $this->context, 'order' )->create();
-		$addrItem = \Aimeos\MShop::create( $this->context, 'order/address' )->create()->setEmail( 'a@b.com' );
-
-		$result = $this->access( 'view' )->invokeArgs( $this->object, [$orderItem->addAddress( $addrItem, 'delivery' )] );
-
-		$this->assertInstanceof( \Aimeos\Base\View\Iface::class, $result );
-	}
-
-
-	protected function access( $name )
-	{
-		$class = new \ReflectionClass( \Aimeos\Controller\Jobs\Order\Email\Delivery\Standard::class );
-		$method = $class->getMethod( $name );
-		$method->setAccessible( true );
-
-		return $method;
-	}
+        return $method;
+    }
 }

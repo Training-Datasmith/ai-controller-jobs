@@ -1,67 +1,61 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2017-2026
  */
 
-
 namespace Aimeos\Controller\Jobs\Media\Scale;
-
 
 class StandardTest extends \PHPUnit\Framework\TestCase
 {
-	private $object;
+    private $object;
 
+    protected function setUp(): void
+    {
+        \Aimeos\MShop::cache(true);
 
-	protected function setUp() : void
-	{
-		\Aimeos\MShop::cache( true );
+        $context = \TestHelper::context();
+        $aimeos = \TestHelper::getAimeos();
 
-		$context = \TestHelper::context();
-		$aimeos = \TestHelper::getAimeos();
+        $this->object = new \Aimeos\Controller\Jobs\Media\Scale\Standard($context, $aimeos);
+    }
 
-		$this->object = new \Aimeos\Controller\Jobs\Media\Scale\Standard( $context, $aimeos );
-	}
+    protected function tearDown(): void
+    {
+        unset($this->object);
+    }
 
+    public function testGetName()
+    {
+        $this->assertEquals('Rescale product images', $this->object->getName());
+    }
 
-	protected function tearDown() : void
-	{
-		unset( $this->object );
-	}
+    public function testGetDescription()
+    {
+        $text = 'Rescales product images to the new sizes';
+        $this->assertEquals($text, $this->object->getDescription());
+    }
 
+    public function testRun()
+    {
+        $context = \TestHelper::context();
+        $aimeos = \TestHelper::getAimeos();
 
-	public function testGetName()
-	{
-		$this->assertEquals( 'Rescale product images', $this->object->getName() );
-	}
+        $managerStub = $this->getMockBuilder('\\Aimeos\\MShop\\Media\\Manager\\Standard')
+            ->onlyMethods([ 'save', 'scale', 'type' ])
+            ->setConstructorArgs([ $context ])
+            ->getMock();
 
+        \Aimeos\MShop::inject('\\Aimeos\\MShop\\Media\\Manager\\Standard', $managerStub);
 
-	public function testGetDescription()
-	{
-		$text = 'Rescales product images to the new sizes';
-		$this->assertEquals( $text, $this->object->getDescription() );
-	}
+        $managerStub->method('type')->willReturn([ 'media']);
+        $managerStub->expects($this->atLeast(1))->method('save');
+        $managerStub->expects($this->atLeast(1))->method('scale')->willReturnArgument(0);
 
-
-	public function testRun()
-	{
-		$context = \TestHelper::context();
-		$aimeos = \TestHelper::getAimeos();
-
-		$managerStub = $this->getMockBuilder( '\\Aimeos\\MShop\\Media\\Manager\\Standard' )
-			->onlyMethods( array( 'save', 'scale', 'type' ) )
-			->setConstructorArgs( array( $context ) )
-			->getMock();
-
-		\Aimeos\MShop::inject( '\\Aimeos\\MShop\\Media\\Manager\\Standard', $managerStub );
-
-		$managerStub->method( 'type' )->willReturn([ 'media'] );
-		$managerStub->expects( $this->atLeast( 1 ) )->method( 'save' );
-		$managerStub->expects( $this->atLeast( 1 ) )->method( 'scale' )->willReturnArgument( 0 );
-
-
-		$object = new \Aimeos\Controller\Jobs\Media\Scale\Standard( $context, $aimeos );
-		$object->run();
-	}
+        $object = new \Aimeos\Controller\Jobs\Media\Scale\Standard($context, $aimeos);
+        $object->run();
+    }
 }

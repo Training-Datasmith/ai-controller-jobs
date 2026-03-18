@@ -1,253 +1,237 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2025
  */
 
-
 namespace Aimeos\Controller\Jobs\Customer\Import\Csv;
-
 
 class StandardTest extends \PHPUnit\Framework\TestCase
 {
-	private $object;
-	private $context;
-	private $aimeos;
+    private $object;
+    private $context;
+    private $aimeos;
 
+    public static function setUpBeforeClass(): void
+    {
+        $context = \TestHelper::context();
 
-	public static function setUpBeforeClass() : void
-	{
-		$context = \TestHelper::context();
+        $fs = $context->fs('fs-import');
+        $fs->has('customer') ?: $fs->mkdir('customer');
+        $fs->writef('customer/unittest/empty.csv', __DIR__ . '/_testfiles/empty.csv');
+
+        $fs->has('customer/valid') ?: $fs->mkdir('customer/valid');
+        $fs->writef('customer/valid/unittest/customers.csv', __DIR__ . '/_testfiles/valid/customers.csv');
+
+        $fs->has('customer/position') ?: $fs->mkdir('customer/position');
+        $fs->writef('customer/position/unittest/customers.csv', __DIR__ . '/_testfiles/position/customers.csv');
+    }
+
+    protected function setUp(): void
+    {
+        \Aimeos\MShop::cache(true);
 
-		$fs = $context->fs( 'fs-import' );
-		$fs->has( 'customer' ) ?: $fs->mkdir( 'customer' );
-		$fs->writef( 'customer/unittest/empty.csv', __DIR__ . '/_testfiles/empty.csv' );
+        $this->context = \TestHelper::context();
+        $this->aimeos = \TestHelper::getAimeos();
 
-		$fs->has( 'customer/valid' ) ?: $fs->mkdir( 'customer/valid' );
-		$fs->writef( 'customer/valid/unittest/customers.csv', __DIR__ . '/_testfiles/valid/customers.csv' );
+        $config = $this->context->config();
+        $config->set('controller/jobs/customer/import/csv/skip-lines', 1);
+        $config->set('controller/jobs/customer/import/csv/location', 'customer/valid');
 
-		$fs->has( 'customer/position' ) ?: $fs->mkdir( 'customer/position' );
-		$fs->writef( 'customer/position/unittest/customers.csv', __DIR__ . '/_testfiles/position/customers.csv' );
-	}
+        $this->object = new \Aimeos\Controller\Jobs\Customer\Import\Csv\Standard($this->context, $this->aimeos);
+    }
 
+    protected function tearDown(): void
+    {
+        \Aimeos\MShop::cache(false);
+        unset($this->object, $this->context, $this->aimeos);
+    }
+
+    public function testGetName()
+    {
+        $this->assertEquals('Customer import CSV', $this->object->getName());
+    }
+
+    public function testGetDescription()
+    {
+        $text = 'Imports new and updates existing customers from CSV files';
+        $this->assertEquals($text, $this->object->getDescription());
+    }
+
+    public function testRun()
+    {
+        $codes = [ 'job@csv.test', 'job2@csv.test' ];
+
+        $this->object->run();
+
+        $result = $this->get($codes, ['customer/address', 'customer/property', 'group']);
+        $this->delete($codes);
+
+        $this->assertEquals(1, count($result));
+        $this->assertEquals(2, count(current($result)->getGroups()));
+        $this->assertEquals(1, count(current($result)->getPropertyItems()));
 
-	protected function setUp() : void
-	{
-		\Aimeos\MShop::cache( true );
+        foreach ($result as $customer) {
+            $this->assertEquals(1, count($customer->getAddressItems()));
+        }
+    }
 
-		$this->context = \TestHelper::context();
-		$this->aimeos = \TestHelper::getAimeos();
+    public function testRunUpdate()
+    {
+        $codes = [ 'job@csv.test', 'job2@csv.test' ];
 
-		$config = $this->context->config();
-		$config->set( 'controller/jobs/customer/import/csv/skip-lines', 1 );
-		$config->set( 'controller/jobs/customer/import/csv/location', 'customer/valid' );
+        $fs = $this->context->fs('fs-import');
+        $fs->writef('customer/valid/unittest/customers.csv', __DIR__ . '/_testfiles/valid/customers.csv');
 
-		$this->object = new \Aimeos\Controller\Jobs\Customer\Import\Csv\Standard( $this->context, $this->aimeos );
-	}
+        $this->object->run();
 
+        $fs = $this->context->fs('fs-import');
+        $fs->writef('customer/valid/unittest/customers.csv', __DIR__ . '/_testfiles/valid/customers.csv');
 
-	protected function tearDown() : void
-	{
-		\Aimeos\MShop::cache( false );
-		unset( $this->object, $this->context, $this->aimeos );
-	}
+        $this->object->run();
 
+        $result = $this->get($codes, ['customer/address', 'customer/property']);
+        $this->delete($codes);
 
-	public function testGetName()
-	{
-		$this->assertEquals( 'Customer import CSV', $this->object->getName() );
-	}
+        $this->assertEquals(1, count($result));
+        $this->assertEquals(1, count(current($result)->getPropertyItems()));
 
+        foreach ($result as $customer) {
+            $this->assertEquals(1, count($customer->getAddressItems()));
+        }
+    }
 
-	public function testGetDescription()
-	{
-		$text = 'Imports new and updates existing customers from CSV files';
-		$this->assertEquals( $text, $this->object->getDescription() );
-	}
+    public function testRunPosition()
+    {
+        $codes = [ 'job@csv.test', 'job2@csv.test' ];
 
+        $config = $this->context->config();
+        $config->set('controller/jobs/customer/import/csv/location', 'customer/position');
 
-	public function testRun()
-	{
-		$codes = array( 'job@csv.test', 'job2@csv.test' );
+        $mapping = [
+            'item' => [
+                0 => 'customer.label',
+                1 => 'customer.code',
+                2 => 'customer.status',
+            ],
+            'property' => [
+                3 => [
+                    '_' => 'customer.property.value',
+                    'customer.property.type' => 'testprop',
+                    'customer.property.languageid' => 'de',
+                ],
+            ],
+        ];
 
-		$this->object->run();
+        $this->context->config()->set('controller/jobs/customer/import/csv/mapping', $mapping);
 
-		$result = $this->get( $codes, ['customer/address', 'customer/property', 'group'] );
-		$this->delete( $codes );
+        $this->object->run();
 
-		$this->assertEquals( 1, count( $result ) );
-		$this->assertEquals( 2, count( current( $result )->getGroups() ) );
-		$this->assertEquals( 1, count( current( $result )->getPropertyItems() ) );
+        $result = $this->get($codes, ['customer/property']);
+        $this->delete($codes);
 
-		foreach( $result as $customer ) {
-			$this->assertEquals( 1, count( $customer->getAddressItems() ) );
-		}
-	}
+        $this->assertEquals(2, count($result));
 
+        foreach ($result as $customer) {
+            $props = $customer->getPropertyItems('testprop');
+            $this->assertEquals(1, count($props));
 
-	public function testRunUpdate()
-	{
-		$codes = array( 'job@csv.test', 'job2@csv.test' );
+            $prop = $props->first();
+            $this->assertEquals('de', $prop->getLanguageId());
+            $this->assertEquals('testpropval', $prop->getValue());
+        }
+    }
 
-		$fs = $this->context->fs( 'fs-import' );
-		$fs->writef( 'customer/valid/unittest/customers.csv', __DIR__ . '/_testfiles/valid/customers.csv' );
+    public function testRunProcessorInvalidMapping()
+    {
+        $config = $this->context->config();
+        $config->set('controller/jobs/customer/import/csv/location', 'customer');
 
-		$this->object->run();
+        $mapping = [
+            'media' => [
+                    8 => 'media.url',
+            ],
+        ];
 
-		$fs = $this->context->fs( 'fs-import' );
-		$fs->writef( 'customer/valid/unittest/customers.csv', __DIR__ . '/_testfiles/valid/customers.csv' );
+        $this->context->config()->set('controller/jobs/customer/import/csv/mapping', $mapping);
 
-		$this->object->run();
+        $this->expectException('\\Aimeos\\Controller\\Jobs\\Exception');
+        $this->object->run();
+    }
 
-		$result = $this->get( $codes, ['customer/address', 'customer/property'] );
-		$this->delete( $codes );
+    public function testRunCheck()
+    {
+        $codes = [ 'job@csv.test', 'job2@csv.test' ];
+        $this->context->config()->set('controller/jobs/customer/import/csv/checks', [
+            'customer.email' => '/^[a-z]+@[a-z]+\.[a-z]{2,3}$/',
+        ]);
 
-		$this->assertEquals( 1, count( $result ) );
-		$this->assertEquals( 1, count( current( $result )->getPropertyItems() ) );
+        $this->object->run();
 
-		foreach( $result as $customer ) {
-			$this->assertEquals( 1, count( $customer->getAddressItems() ) );
-		}
-	}
+        $result = $this->get($codes, ['customer/address', 'customer/property']);
 
+        $this->assertEquals(0, count($result));
+    }
 
-	public function testRunPosition()
-	{
-		$codes = array( 'job@csv.test', 'job2@csv.test' );
+    public function testRunBackup()
+    {
+        $config = $this->context->config();
+        $config->set('controller/jobs/customer/import/csv/backup', 'backup-%Y-%m-%d.csv');
+        $config->set('controller/jobs/customer/import/csv/location', 'customer');
 
-		$config = $this->context->config();
-		$config->set( 'controller/jobs/customer/import/csv/location', 'customer/position' );
+        $this->object->run();
 
-		$mapping = array(
-			'item' => array(
-				0 => 'customer.label',
-				1 => 'customer.code',
-				2 => 'customer.status',
-			),
-			'property' => [
-				3 => [
-					'_' => 'customer.property.value',
-					'customer.property.type' => 'testprop',
-					'customer.property.languageid' => 'de',
-				],
-			],
-		);
+        $filename = \Aimeos\Base\Str::strtime('backup-%Y-%m-%d.csv');
+        $this->assertTrue($this->context->fs('fs-import')->has($filename));
 
-		$this->context->config()->set( 'controller/jobs/customer/import/csv/mapping', $mapping );
+        $this->context->fs('fs-import')->rm($filename);
+    }
 
-		$this->object->run();
+    protected function access($name)
+    {
+        $class = new \ReflectionClass(\Aimeos\Controller\Jobs\Customer\Import\Csv\Standard::class);
+        $method = $class->getMethod($name);
+        $method->setAccessible(true);
 
-		$result = $this->get( $codes, ['customer/property'] );
-		$this->delete( $codes );
+        return $method;
+    }
 
-		$this->assertEquals( 2, count( $result ) );
+    protected function delete(array $codes)
+    {
+        $customerManager = \Aimeos\MShop::create($this->context, 'customer');
 
-		foreach( $result as $customer ) {
-			$props = $customer->getPropertyItems( 'testprop' );
-			$this->assertEquals( 1, count( $props ) );
+        foreach ($this->get($codes) as $id => $customer) {
+            $customerManager->delete($customer->getId());
+        }
 
-			$prop = $props->first();
-			$this->assertEquals( 'de', $prop->getLanguageId() );
-			$this->assertEquals( 'testpropval', $prop->getValue() );
-		}
-	}
+        $attrManager = \Aimeos\MShop::create($this->context, 'attribute');
 
+        $search = $attrManager->filter();
+        $search->setConditions($search->compare('==', 'attribute.code', 'import-test'));
 
-	public function testRunProcessorInvalidMapping()
-	{
-		$config = $this->context->config();
-		$config->set( 'controller/jobs/customer/import/csv/location', 'customer' );
+        $attrManager->delete($attrManager->search($search));
+    }
 
-		$mapping = array(
-			'media' => array(
-					8 => 'media.url',
-			),
-		);
+    protected function get(array $codes, array $domains = []): array
+    {
+        $customerManager = \Aimeos\MShop::create($this->context, 'customer');
 
-		$this->context->config()->set( 'controller/jobs/customer/import/csv/mapping', $mapping );
+        $search = $customerManager->filter();
+        $search->setConditions($search->compare('==', 'customer.code', $codes));
 
-		$this->expectException( '\\Aimeos\\Controller\\Jobs\\Exception' );
-		$this->object->run();
-	}
+        return $customerManager->search($search, $domains)->all();
+    }
 
+    protected function getProperties(array $parentIds): array
+    {
+        $manager = \Aimeos\MShop::create($this->context, 'customer/property');
 
-	public function testRunCheck()
-	{
-		$codes = array( 'job@csv.test', 'job2@csv.test' );
-		$this->context->config()->set( 'controller/jobs/customer/import/csv/checks', [
-			'customer.email' => '/^[a-z]+@[a-z]+\.[a-z]{2,3}$/',
-		] );
+        $search = $manager->filter()->order('customer.property.type')
+            ->add(['customer.property.parentid' => $parentIds]);
 
-		$this->object->run();
-
-		$result = $this->get( $codes, ['customer/address', 'customer/property'] );
-
-		$this->assertEquals( 0, count( $result ) );
-	}
-
-
-	public function testRunBackup()
-	{
-		$config = $this->context->config();
-		$config->set( 'controller/jobs/customer/import/csv/backup', 'backup-%Y-%m-%d.csv' );
-		$config->set( 'controller/jobs/customer/import/csv/location', 'customer' );
-
-		$this->object->run();
-
-		$filename = \Aimeos\Base\Str::strtime( 'backup-%Y-%m-%d.csv' );
-		$this->assertTrue( $this->context->fs( 'fs-import' )->has( $filename ) );
-
-		$this->context->fs( 'fs-import' )->rm( $filename );
-	}
-
-
-	protected function access( $name )
-	{
-		$class = new \ReflectionClass( \Aimeos\Controller\Jobs\Customer\Import\Csv\Standard::class );
-		$method = $class->getMethod( $name );
-		$method->setAccessible( true );
-
-		return $method;
-	}
-
-
-	protected function delete( array $codes )
-	{
-		$customerManager = \Aimeos\MShop::create( $this->context, 'customer' );
-
-		foreach( $this->get( $codes ) as $id => $customer ) {
-			$customerManager->delete( $customer->getId() );
-		}
-
-
-		$attrManager = \Aimeos\MShop::create( $this->context, 'attribute' );
-
-		$search = $attrManager->filter();
-		$search->setConditions( $search->compare( '==', 'attribute.code', 'import-test' ) );
-
-		$attrManager->delete( $attrManager->search( $search ) );
-	}
-
-
-	protected function get( array $codes, array $domains = [] ) : array
-	{
-		$customerManager = \Aimeos\MShop::create( $this->context, 'customer' );
-
-		$search = $customerManager->filter();
-		$search->setConditions( $search->compare( '==', 'customer.code', $codes ) );
-
-		return $customerManager->search( $search, $domains )->all();
-	}
-
-
-	protected function getProperties( array $parentIds ) : array
-	{
-		$manager = \Aimeos\MShop::create( $this->context, 'customer/property' );
-
-		$search = $manager->filter()->order( 'customer.property.type' )
-			->add( ['customer.property.parentid' => $parentIds] );
-
-		return $manager->search( $search )->all();
-	}
+        return $manager->search($search)->all();
+    }
 }

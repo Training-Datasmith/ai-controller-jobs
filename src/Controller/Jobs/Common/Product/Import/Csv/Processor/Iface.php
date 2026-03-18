@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2015-2026
@@ -7,9 +9,7 @@
  * @subpackage Common
  */
 
-
 namespace Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor;
-
 
 /**
  * Common interface for all CSV import processors
@@ -19,29 +19,30 @@ namespace Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor;
  */
 interface Iface
 {
-	/**
-	 * Initializes the object
-	 *
-	 * @param \Aimeos\MShop\ContextIface $context Context object
-	 * @param array $mapping Associative list of field position in CSV as key and domain item key as value
-	 * @param \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Iface $processor Decorated processor
-	 */
-	public function __construct( \Aimeos\MShop\ContextIface $context, array $mapping,
-		?\Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Iface $processor = null );
+    /**
+     * Initializes the object
+     *
+     * @param \Aimeos\MShop\ContextIface $context Context object
+     * @param array $mapping Associative list of field position in CSV as key and domain item key as value
+     * @param \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Iface $processor Decorated processor
+     */
+    public function __construct(
+        \Aimeos\MShop\ContextIface $context,
+        array $mapping,
+        ?\Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Iface $processor = null
+    );
 
+    /**
+     * Stores all types for which no type items exist yet
+     */
+    public function finish();
 
-	/**
-	 * Stores all types for which no type items exist yet
-	 */
-	public function finish();
-
-
-	/**
-	 * Saves the product related data to the storage
-	 *
-	 * @param \Aimeos\MShop\Product\Item\Iface $product Product item with associated items
-	 * @param array $data List of CSV fields with position as key and data as value
-	 * @return array List of data which hasn't been imported
-	 */
-	public function process( \Aimeos\MShop\Product\Item\Iface $product, array $data );
+    /**
+     * Saves the product related data to the storage
+     *
+     * @param \Aimeos\MShop\Product\Item\Iface $product Product item with associated items
+     * @param array $data List of CSV fields with position as key and data as value
+     * @return array List of data which hasn't been imported
+     */
+    public function process(\Aimeos\MShop\Product\Item\Iface $product, array $data);
 }

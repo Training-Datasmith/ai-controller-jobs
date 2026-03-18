@@ -1,220 +1,204 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2015-2026
  */
 
-
 namespace Aimeos\Controller\Jobs\Supplier\Import\Csv;
-
 
 class StandardTest extends \PHPUnit\Framework\TestCase
 {
-	private $object;
-	private $context;
-	private $aimeos;
+    private $object;
+    private $context;
+    private $aimeos;
 
+    public static function setUpBeforeClass(): void
+    {
+        $context = \TestHelper::context();
 
-	public static function setUpBeforeClass() : void
-	{
-		$context = \TestHelper::context();
+        $fs = $context->fs('fs-import');
+        $fs->has('supplier/unittest') ?: $fs->mkdir('supplier/unittest');
+        $fs->writef('supplier/unittest/empty.csv', __DIR__ . '/_testfiles/empty.csv');
 
-		$fs = $context->fs( 'fs-import' );
-		$fs->has( 'supplier/unittest' ) ?: $fs->mkdir( 'supplier/unittest' );
-		$fs->writef( 'supplier/unittest/empty.csv', __DIR__ . '/_testfiles/empty.csv' );
+        $fs->has('supplier/valid') ?: $fs->mkdir('supplier/valid');
+        $fs->writef('supplier/valid/unittest/suppliers.csv', __DIR__ . '/_testfiles/valid/suppliers.csv');
 
-		$fs->has( 'supplier/valid' ) ?: $fs->mkdir( 'supplier/valid' );
-		$fs->writef( 'supplier/valid/unittest/suppliers.csv', __DIR__ . '/_testfiles/valid/suppliers.csv' );
+        $fs->has('supplier/position') ?: $fs->mkdir('supplier/position');
+        $fs->writef('supplier/position/unittest/suppliers.csv', __DIR__ . '/_testfiles/position/suppliers.csv');
 
-		$fs->has( 'supplier/position' ) ?: $fs->mkdir( 'supplier/position' );
-		$fs->writef( 'supplier/position/unittest/suppliers.csv', __DIR__ . '/_testfiles/position/suppliers.csv' );
+        $fs = $context->fs('fs-media');
+        $fs->has('path/to') ?: $fs->mkdir('path/to');
+        $fs->write('path/to/file2.jpg', 'test');
+        $fs->write('path/to/file.jpg', 'test');
 
-		$fs = $context->fs( 'fs-media' );
-		$fs->has( 'path/to' ) ?: $fs->mkdir( 'path/to' );
-		$fs->write( 'path/to/file2.jpg', 'test' );
-		$fs->write( 'path/to/file.jpg', 'test' );
+        $fs = $context->fs('fs-mimeicon');
+        $fs->write('unknown.png', 'icon');
+    }
 
-		$fs = $context->fs( 'fs-mimeicon' );
-		$fs->write( 'unknown.png', 'icon' );
-	}
+    protected function setUp(): void
+    {
+        \Aimeos\MShop::cache(true);
 
+        $this->aimeos = \TestHelper::getAimeos();
+        $this->context = \TestHelper::context();
 
-	protected function setUp() : void
-	{
-		\Aimeos\MShop::cache( true );
+        $config = $this->context->config();
+        $config->set('controller/jobs/supplier/import/csv/skip-lines', 1);
+        $config->set('controller/jobs/supplier/import/csv/location', 'supplier/valid');
 
-		$this->aimeos = \TestHelper::getAimeos();
-		$this->context = \TestHelper::context();
+        $this->object = new \Aimeos\Controller\Jobs\Supplier\Import\Csv\Standard($this->context, $this->aimeos);
+    }
 
-		$config = $this->context->config();
-		$config->set( 'controller/jobs/supplier/import/csv/skip-lines', 1 );
-		$config->set( 'controller/jobs/supplier/import/csv/location', 'supplier/valid' );
+    protected function tearDown(): void
+    {
+        \Aimeos\MShop::cache(false);
+        unset($this->object, $this->context, $this->aimeos);
+    }
 
-		$this->object = new \Aimeos\Controller\Jobs\Supplier\Import\Csv\Standard( $this->context, $this->aimeos );
-	}
+    public function testGetName()
+    {
+        $this->assertEquals('Supplier import CSV', $this->object->getName());
+    }
 
+    public function testGetDescription()
+    {
+        $text = 'Imports new and updates existing suppliers from CSV files';
+        $this->assertEquals($text, $this->object->getDescription());
+    }
 
-	protected function tearDown() : void
-	{
-		\Aimeos\MShop::cache( false );
-		unset( $this->object, $this->context, $this->aimeos );
-	}
+    public function testRun()
+    {
+        $codes = ['job_csv_test', 'job_csv_test2'];
 
+        $this->object->run();
 
-	public function testGetName()
-	{
-		$this->assertEquals( 'Supplier import CSV', $this->object->getName() );
-	}
+        $result = $this->get($codes, ['address', 'media', 'text']);
+        $addresses = $this->getAddresses(array_keys($result));
 
+        $this->delete($codes, ['media', 'text']);
 
-	public function testGetDescription()
-	{
-		$text = 'Imports new and updates existing suppliers from CSV files';
-		$this->assertEquals( $text, $this->object->getDescription() );
-	}
+        $this->assertEquals(2, count($result));
+        $this->assertEquals(2, count($addresses));
 
+        foreach ($result as $supplier) {
+            $this->assertEquals(2, count($supplier->getListItems()));
+        }
+    }
 
-	public function testRun()
-	{
-		$codes = ['job_csv_test', 'job_csv_test2'];
+    public function testRunUpdate()
+    {
+        $fs = $this->context->fs('fs-import');
+        $fs->writef('supplier/valid/unittest/suppliers.csv', __DIR__ . '/_testfiles/valid/suppliers.csv');
 
-		$this->object->run();
+        $this->object->run();
 
-		$result = $this->get( $codes, ['address', 'media', 'text'] );
-		$addresses = $this->getAddresses( array_keys( $result ) );
+        $fs = $this->context->fs('fs-import');
+        $fs->writef('supplier/valid/unittest/suppliers.csv', __DIR__ . '/_testfiles/valid/suppliers.csv');
 
-		$this->delete( $codes, ['media', 'text'] );
+        $this->object->run();
 
-		$this->assertEquals( 2, count( $result ) );
-		$this->assertEquals( 2, count( $addresses ) );
+        $codes = ['job_csv_test', 'job_csv_test2'];
+        $result = $this->get($codes, ['address', 'media', 'text']);
+        $addresses = $this->getAddresses(array_keys($result));
 
-		foreach( $result as $supplier ) {
-			$this->assertEquals( 2, count( $supplier->getListItems() ) );
-		}
-	}
+        $this->delete($codes, ['media', 'text']);
 
+        $this->assertEquals(2, count($result));
+        $this->assertEquals(2, count($addresses));
 
-	public function testRunUpdate()
-	{
-		$fs = $this->context->fs( 'fs-import' );
-		$fs->writef( 'supplier/valid/unittest/suppliers.csv', __DIR__ . '/_testfiles/valid/suppliers.csv' );
+        foreach ($result as $supplier) {
+            $this->assertEquals(2, count($supplier->getListItems()));
+        }
+    }
 
-		$this->object->run();
+    public function testRunPosition()
+    {
+        $codes = ['job_csv_test', 'job_csv_test2'];
 
-		$fs = $this->context->fs( 'fs-import' );
-		$fs->writef( 'supplier/valid/unittest/suppliers.csv', __DIR__ . '/_testfiles/valid/suppliers.csv' );
+        $config = $this->context->config();
+        $mapping = $config->get('controller/jobs/supplier/import/csv/mapping', []);
+        $mapping['item'] = [ 0 => 'supplier.label', 1 => 'supplier.code' ];
 
-		$this->object->run();
+        $config->set('controller/jobs/supplier/import/csv/mapping', $mapping);
+        $config->set('controller/jobs/supplier/import/csv/location', 'supplier/position');
 
-		$codes = ['job_csv_test', 'job_csv_test2'];
-		$result = $this->get( $codes, ['address', 'media', 'text'] );
-		$addresses = $this->getAddresses( array_keys( $result ) );
+        $this->object->run();
 
-		$this->delete( $codes, ['media', 'text'] );
+        $result = $this->get($codes, ['address', 'media', 'text']);
+        $this->delete($codes, ['media', 'text']);
 
-		$this->assertEquals( 2, count( $result ) );
-		$this->assertEquals( 2, count( $addresses ) );
+        $this->assertEquals(2, count($result));
+    }
 
-		foreach( $result as $supplier ) {
-			$this->assertEquals( 2, count( $supplier->getListItems() ) );
-		}
-	}
+    public function testRunProcessorInvalidMapping()
+    {
+        $config = $this->context->config();
+        $config->set('controller/jobs/supplier/import/csv/location', 'supplier');
 
+        $mapping = [
+            'media' => [
+                8 => 'media.url',
+            ],
+        ];
 
-	public function testRunPosition()
-	{
-		$codes = ['job_csv_test', 'job_csv_test2'];
+        $this->context->config()->set('controller/jobs/supplier/import/csv/mapping', $mapping);
 
-		$config = $this->context->config();
-		$mapping = $config->get( 'controller/jobs/supplier/import/csv/mapping', [] );
-		$mapping['item'] = array( 0 => 'supplier.label', 1 => 'supplier.code' );
+        $this->expectException('\\Aimeos\\Controller\\Jobs\\Exception');
+        $this->object->run();
+    }
 
-		$config->set( 'controller/jobs/supplier/import/csv/mapping', $mapping );
-		$config->set( 'controller/jobs/supplier/import/csv/location', 'supplier/position' );
+    public function testRunBackup()
+    {
+        $config = $this->context->config();
+        $config->set('controller/jobs/supplier/import/csv/backup', 'backup-%Y-%m-%d.csv');
+        $config->set('controller/jobs/supplier/import/csv/location', 'supplier');
 
-		$this->object->run();
+        $this->object->run();
 
-		$result = $this->get( $codes, ['address', 'media', 'text'] );
-		$this->delete( $codes, ['media', 'text'] );
+        $filename = \Aimeos\Base\Str::strtime('backup-%Y-%m-%d.csv');
+        $this->assertTrue($this->context->fs('fs-import')->has($filename));
 
-		$this->assertEquals( 2, count( $result ) );
-	}
+        $this->context->fs('fs-import')->rm($filename);
+    }
 
+    protected function delete(array $codes, array $delete)
+    {
+        $supplierManager = \Aimeos\MShop::create($this->context, 'supplier');
 
-	public function testRunProcessorInvalidMapping()
-	{
-		$config = $this->context->config();
-		$config->set( 'controller/jobs/supplier/import/csv/location', 'supplier' );
+        foreach ($this->get($codes, $delete) as $id => $supplier) {
+            foreach ($delete as $domain) {
+                $manager = \Aimeos\MShop::create($this->context, $domain);
 
-		$mapping = array(
-			'media' => array(
-				8 => 'media.url',
-			),
-		);
+                foreach ($supplier->getListItems($domain) as $listItem) {
+                    $manager->delete($listItem->getRefItem()->getId());
+                }
+            }
 
-		$this->context->config()->set( 'controller/jobs/supplier/import/csv/mapping', $mapping );
+            $supplierManager->delete($id);
+        }
 
-		$this->expectException( '\\Aimeos\\Controller\\Jobs\\Exception' );
-		$this->object->run();
-	}
+        $attrManager = \Aimeos\MShop::create($this->context, 'attribute');
+        $search = $attrManager->filter()->add(['attribute.code' => 'import-test']);
 
+        $attrManager->delete($attrManager->search($search));
+    }
 
-	public function testRunBackup()
-	{
-		$config = $this->context->config();
-		$config->set( 'controller/jobs/supplier/import/csv/backup', 'backup-%Y-%m-%d.csv' );
-		$config->set( 'controller/jobs/supplier/import/csv/location', 'supplier' );
+    protected function get(array $codes, array $domains): array
+    {
+        $supplierManager = \Aimeos\MShop::create($this->context, 'supplier');
+        $search = $supplierManager->filter()->add(['supplier.code' => $codes]);
 
-		$this->object->run();
+        return $supplierManager->search($search, $domains)->all();
+    }
 
-		$filename = \Aimeos\Base\Str::strtime( 'backup-%Y-%m-%d.csv' );
-		$this->assertTrue( $this->context->fs( 'fs-import' )->has( $filename ) );
+    protected function getAddresses(array $prodids): array
+    {
+        $manager = \Aimeos\MShop::create($this->context, 'supplier/address');
+        $search = $manager->filter()->add(['supplier.address.parentid' => $prodids]);
 
-		$this->context->fs( 'fs-import' )->rm( $filename );
-	}
-
-
-	protected function delete( array $codes, array $delete )
-	{
-		$supplierManager = \Aimeos\MShop::create( $this->context, 'supplier' );
-
-		foreach( $this->get( $codes, $delete ) as $id => $supplier )
-		{
-			foreach( $delete as $domain )
-			{
-				$manager = \Aimeos\MShop::create( $this->context, $domain );
-
-				foreach( $supplier->getListItems( $domain ) as $listItem ) {
-					$manager->delete( $listItem->getRefItem()->getId() );
-				}
-			}
-
-			$supplierManager->delete( $id );
-		}
-
-
-		$attrManager = \Aimeos\MShop::create( $this->context, 'attribute' );
-		$search = $attrManager->filter()->add( ['attribute.code' => 'import-test'] );
-
-		$attrManager->delete( $attrManager->search( $search ) );
-	}
-
-
-	protected function get( array $codes, array $domains ) : array
-	{
-		$supplierManager = \Aimeos\MShop::create( $this->context, 'supplier' );
-		$search = $supplierManager->filter()->add( ['supplier.code' => $codes] );
-
-		return $supplierManager->search( $search, $domains )->all();
-	}
-
-
-	protected function getAddresses( array $prodids ) : array
-	{
-		$manager = \Aimeos\MShop::create( $this->context, 'supplier/address' );
-		$search = $manager->filter()->add( ['supplier.address.parentid' => $prodids] );
-
-		return $manager->search( $search )->all();
-	}
+        return $manager->search($search)->all();
+    }
 }

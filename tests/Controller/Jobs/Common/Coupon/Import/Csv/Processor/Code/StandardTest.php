@@ -1,137 +1,127 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2017-2026
  */
 
-
 namespace Aimeos\Controller\Jobs\Common\Coupon\Import\Csv\Processor\Code;
-
 
 class StandardTest extends \PHPUnit\Framework\TestCase
 {
-	private $context;
-	private $endpoint;
+    private $context;
+    private $endpoint;
 
+    protected function setUp(): void
+    {
+        \Aimeos\MShop::cache(true);
 
-	protected function setUp() : void
-	{
-		\Aimeos\MShop::cache( true );
+        $this->context = \TestHelper::context();
+        $this->endpoint = new \Aimeos\Controller\Jobs\Common\Coupon\Import\Csv\Processor\Done($this->context, []);
+    }
 
-		$this->context = \TestHelper::context();
-		$this->endpoint = new \Aimeos\Controller\Jobs\Common\Coupon\Import\Csv\Processor\Done( $this->context, [] );
-	}
+    protected function tearDown(): void
+    {
+        \Aimeos\MShop::cache(false);
+    }
 
+    public function testProcess()
+    {
+        $mapping = [
+            0 => 'coupon.code.code',
+            1 => 'coupon.code.count',
+            2 => 'coupon.code.datestart',
+            3 => 'coupon.code.dateend',
+        ];
 
-	protected function tearDown() : void
-	{
-		\Aimeos\MShop::cache( false );
-	}
+        $data = [
+            0 => 'jobimporttest',
+            1 => '10',
+            2 => '2000-01-01 00:00:00',
+            3 => '',
+        ];
 
+        $manager = \Aimeos\MShop::create($this->context, 'coupon');
+        $codeManager = \Aimeos\MShop::create($this->context, 'coupon/code');
 
-	public function testProcess()
-	{
-		$mapping = array(
-			0 => 'coupon.code.code',
-			1 => 'coupon.code.count',
-			2 => 'coupon.code.datestart',
-			3 => 'coupon.code.dateend',
-		);
+        $coupon = $manager->save($manager->create()->setProvider('test'));
+        $couponCode = $codeManager->create();
+        $couponCode->setParentId($coupon->getId());
 
-		$data = array(
-			0 => 'jobimporttest',
-			1 => '10',
-			2 => '2000-01-01 00:00:00',
-			3 => '',
-		);
+        $object = new \Aimeos\Controller\Jobs\Common\Coupon\Import\Csv\Processor\Code\Standard($this->context, $mapping, $this->endpoint);
+        $object->process($couponCode, $data);
 
-		$manager = \Aimeos\MShop::create( $this->context, 'coupon' );
-		$codeManager = \Aimeos\MShop::create( $this->context, 'coupon/code' );
+        $codeManager->delete($couponCode->getId());
+        $manager->delete($coupon->getId());
 
-		$coupon = $manager->save( $manager->create()->setProvider( 'test' ) );
-		$couponCode = $codeManager->create();
-		$couponCode->setParentId( $coupon->getId() );
+        $this->assertEquals(10, $couponCode->getCount());
+        $this->assertEquals('jobimporttest', $couponCode->getCode());
+        $this->assertEquals('2000-01-01 00:00:00', $couponCode->getDateStart());
+        $this->assertEquals(null, $couponCode->getDateEnd());
+    }
 
-		$object = new \Aimeos\Controller\Jobs\Common\Coupon\Import\Csv\Processor\Code\Standard( $this->context, $mapping, $this->endpoint );
-		$object->process( $couponCode, $data );
+    public function testProcessUpdate()
+    {
+        $mapping = [
+            0 => 'coupon.code.code',
+            1 => 'coupon.code.count',
+        ];
 
-		$codeManager->delete( $couponCode->getId() );
-		$manager->delete( $coupon->getId() );
+        $data = [
+            0 => 'jobimporttest',
+            1 => '10',
+        ];
 
+        $dataUpdate = [
+            0 => 'jobimporttest',
+            1 => '5',
+        ];
 
-		$this->assertEquals( 10, $couponCode->getCount() );
-		$this->assertEquals( 'jobimporttest', $couponCode->getCode() );
-		$this->assertEquals( '2000-01-01 00:00:00', $couponCode->getDateStart() );
-		$this->assertEquals( null, $couponCode->getDateEnd() );
-	}
+        $manager = \Aimeos\MShop::create($this->context, 'coupon');
+        $codeManager = \Aimeos\MShop::create($this->context, 'coupon/code');
 
+        $coupon = $manager->save($manager->create()->setProvider('test'));
+        $couponCode = $codeManager->create();
+        $couponCode->setParentId($coupon->getId());
 
-	public function testProcessUpdate()
-	{
-		$mapping = array(
-			0 => 'coupon.code.code',
-			1 => 'coupon.code.count',
-		);
+        $object = new \Aimeos\Controller\Jobs\Common\Coupon\Import\Csv\Processor\Code\Standard($this->context, $mapping, $this->endpoint);
+        $object->process($couponCode, $data);
+        $object->process($couponCode, $dataUpdate);
 
-		$data = array(
-			0 => 'jobimporttest',
-			1 => '10',
-		);
+        $codeManager->delete($couponCode->getId());
+        $manager->delete($coupon->getId());
 
-		$dataUpdate = array(
-			0 => 'jobimporttest',
-			1 => '5',
-		);
+        $this->assertEquals(5, $couponCode->getCount());
+        $this->assertEquals('jobimporttest', $couponCode->getCode());
+    }
 
+    public function testProcessEmpty()
+    {
+        $mapping = [
+            0 => 'coupon.code.code',
+            1 => 'coupon.code.count',
+        ];
 
-		$manager = \Aimeos\MShop::create( $this->context, 'coupon' );
-		$codeManager = \Aimeos\MShop::create( $this->context, 'coupon/code' );
+        $data = [
+            0 => 'jobimporttest',
+            1 => '',
+        ];
 
-		$coupon = $manager->save( $manager->create()->setProvider( 'test' ) );
-		$couponCode = $codeManager->create();
-		$couponCode->setParentId( $coupon->getId() );
+        $manager = \Aimeos\MShop::create($this->context, 'coupon');
+        $codeManager = \Aimeos\MShop::create($this->context, 'coupon/code');
 
-		$object = new \Aimeos\Controller\Jobs\Common\Coupon\Import\Csv\Processor\Code\Standard( $this->context, $mapping, $this->endpoint );
-		$object->process( $couponCode, $data );
-		$object->process( $couponCode, $dataUpdate );
+        $coupon = $manager->save($manager->create()->setProvider('test'));
+        $couponCode = $codeManager->create();
+        $couponCode->setParentId($coupon->getId());
 
-		$codeManager->delete( $couponCode->getId() );
-		$manager->delete( $coupon->getId() );
+        $object = new \Aimeos\Controller\Jobs\Common\Coupon\Import\Csv\Processor\Code\Standard($this->context, $mapping, $this->endpoint);
+        $object->process($couponCode, $data);
 
+        $codeManager->delete($couponCode->getId());
+        $manager->delete($coupon->getId());
 
-		$this->assertEquals( 5, $couponCode->getCount() );
-		$this->assertEquals( 'jobimporttest', $couponCode->getCode() );
-	}
-
-
-	public function testProcessEmpty()
-	{
-		$mapping = array(
-			0 => 'coupon.code.code',
-			1 => 'coupon.code.count',
-		);
-
-		$data = array(
-			0 => 'jobimporttest',
-			1 => '',
-		);
-
-
-		$manager = \Aimeos\MShop::create( $this->context, 'coupon' );
-		$codeManager = \Aimeos\MShop::create( $this->context, 'coupon/code' );
-
-		$coupon = $manager->save( $manager->create()->setProvider( 'test' ) );
-		$couponCode = $codeManager->create();
-		$couponCode->setParentId( $coupon->getId() );
-
-		$object = new \Aimeos\Controller\Jobs\Common\Coupon\Import\Csv\Processor\Code\Standard( $this->context, $mapping, $this->endpoint );
-		$object->process( $couponCode, $data );
-
-		$codeManager->delete( $couponCode->getId() );
-		$manager->delete( $coupon->getId() );
-
-
-		$this->assertEquals( 0, $couponCode->getCount() );
-	}
+        $this->assertEquals(0, $couponCode->getCount());
+    }
 }

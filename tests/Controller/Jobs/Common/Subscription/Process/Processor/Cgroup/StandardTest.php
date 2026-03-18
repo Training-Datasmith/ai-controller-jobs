@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2018-2026
@@ -7,148 +9,139 @@
 
 namespace Aimeos\Controller\Jobs\Common\Subscription\Process\Processor\Cgroup;
 
-
 class StandardTest extends \PHPUnit\Framework\TestCase
 {
-	private $context;
-	private $custStub;
+    private $context;
+    private $custStub;
 
+    protected function setUp(): void
+    {
+        \Aimeos\MShop::cache(true);
 
-	protected function setUp() : void
-	{
-		\Aimeos\MShop::cache( true );
+        $this->context = \TestHelper::context();
 
-		$this->context = \TestHelper::context();
+        $this->custStub = $this->getMockBuilder('\\Aimeos\\MShop\\Customer\\Manager\\Standard')
+            ->setConstructorArgs([$this->context])
+            ->onlyMethods(['get', 'save'])
+            ->getMock();
 
-		$this->custStub = $this->getMockBuilder( '\\Aimeos\\MShop\\Customer\\Manager\\Standard' )
-			->setConstructorArgs( [$this->context] )
-			->onlyMethods( ['get', 'save'] )
-			->getMock();
+        \Aimeos\MShop::inject('\\Aimeos\\MShop\\Customer\\Manager\\Standard', $this->custStub);
+    }
 
-		\Aimeos\MShop::inject( '\\Aimeos\\MShop\\Customer\\Manager\\Standard', $this->custStub );
-	}
+    protected function tearDown(): void
+    {
+        \Aimeos\MShop::cache(false);
+        unset($this->context);
+    }
 
+    public function testBegin()
+    {
+        $ordProdStub = $this->getMockBuilder('\\Aimeos\\MShop\\Order\\Manager\\Product\\Standard')
+            ->setConstructorArgs([$this->context])
+            ->onlyMethods(['get', 'type'])
+            ->getMock();
 
-	protected function tearDown() : void
-	{
-		\Aimeos\MShop::cache( false );
-		unset( $this->context );
-	}
+        $ordProdStub->method('type')->willReturn(['order', 'product']);
 
+        \Aimeos\MShop::inject('\\Aimeos\\MShop\\Order\\Manager\\Product\\Standard', $ordProdStub);
 
-	public function testBegin()
-	{
-		$ordProdStub = $this->getMockBuilder( '\\Aimeos\\MShop\\Order\\Manager\\Product\\Standard' )
-			->setConstructorArgs( [$this->context] )
-			->onlyMethods( ['get', 'type'] )
-			->getMock();
+        $subscription = $this->getSubscription();
+        $ordProdAttrManager = $ordProdStub->getSubManager('attribute');
+        $ordProdAttrItem = $ordProdAttrManager->create()->setType('hidden')->setCode('group');
 
-		$ordProdStub->method( 'type' )->willReturn( ['order', 'product'] );
+        $ordProdItem = $ordProdStub->create()->setAttributeItems([
+            (clone $ordProdAttrItem)->setAttributeId(10)->setValue('3'),
+            (clone $ordProdAttrItem)->setAttributeId(11)->setValue('4'),
+        ]);
 
-		\Aimeos\MShop::inject( '\\Aimeos\\MShop\\Order\\Manager\\Product\\Standard', $ordProdStub );
+        $ordProdStub->expects($this->once())->method('get')
+            ->willReturn($ordProdItem);
 
-		$subscription = $this->getSubscription();
-		$ordProdAttrManager = $ordProdStub->getSubManager( 'attribute' );
-		$ordProdAttrItem = $ordProdAttrManager->create()->setType( 'hidden' )->setCode( 'group' );
+        $this->custStub->expects($this->once())->method('get')
+            ->willReturn($this->custStub->create());
 
-		$ordProdItem = $ordProdStub->create()->setAttributeItems( [
-			( clone $ordProdAttrItem )->setAttributeId( 10 )->setValue( '3' ),
-			( clone $ordProdAttrItem )->setAttributeId( 11 )->setValue( '4' ),
-		] );
+        $this->custStub->expects($this->once())->method('save')
+            ->with($this->callback(function ($subject) {
+                return $subject->getGroups() === ['3', '4'];
+            }));
 
-		$ordProdStub->expects( $this->once() )->method( 'get' )
-			->willReturn( $ordProdItem );
+        $object = new \Aimeos\Controller\Jobs\Common\Subscription\Process\Processor\Cgroup\Standard($this->context);
+        $object->begin($subscription, $subscription->getOrderItem());
+    }
 
-		$this->custStub->expects( $this->once() )->method( 'get' )
-			->willReturn( $this->custStub->create() );
+    public function testBeginCustomGroups()
+    {
+        $this->custStub->expects($this->once())->method('get')
+            ->willReturn($this->custStub->create()->setGroups(['1', '2']));
 
-		$this->custStub->expects( $this->once() )->method( 'save' )
-			->with( $this->callback( function( $subject ) {
-				return $subject->getGroups() === ['3', '4'];
-			} ) );
+        $this->custStub->expects($this->once())->method('save')
+            ->with($this->callback(function ($subject) {
+                return $subject->getGroups() === ['1', '2'];
+            }));
 
+        $subscription = $this->getSubscription();
 
-		$object = new \Aimeos\Controller\Jobs\Common\Subscription\Process\Processor\Cgroup\Standard( $this->context );
-		$object->begin( $subscription, $subscription->getOrderItem() );
-	}
+        $object = new \Aimeos\Controller\Jobs\Common\Subscription\Process\Processor\Cgroup\Standard($this->context);
+        $object->begin($subscription, $subscription->getOrderItem());
+    }
 
+    public function testEnd()
+    {
+        $ordProdStub = $this->getMockBuilder('\\Aimeos\\MShop\\Order\\Manager\\Product\\Standard')
+            ->setConstructorArgs([$this->context])
+            ->onlyMethods(['get', 'type'])
+            ->getMock();
 
-	public function testBeginCustomGroups()
-	{
-		$this->custStub->expects( $this->once() )->method( 'get' )
-			->willReturn( $this->custStub->create()->setGroups( ['1', '2'] ) );
+        $ordProdStub->method('type')->willReturn(['order', 'product']);
 
-		$this->custStub->expects( $this->once() )->method( 'save' )
-			->with( $this->callback( function( $subject ) {
-				return $subject->getGroups() === ['1', '2'];
-			} ) );
+        \Aimeos\MShop::inject('\\Aimeos\\MShop\\Order\\Manager\\Product\\Standard', $ordProdStub);
 
-		$subscription = $this->getSubscription();
+        $subscription = $this->getSubscription();
+        $ordProdAttrManager = $ordProdStub->getSubManager('attribute');
+        $ordProdAttrItem = $ordProdAttrManager->create()->setType('hidden')->setCode('group');
 
-		$object = new \Aimeos\Controller\Jobs\Common\Subscription\Process\Processor\Cgroup\Standard( $this->context );
-		$object->begin( $subscription, $subscription->getOrderItem() );
-	}
+        $ordProdItem = $ordProdStub->create()->setAttributeItems([
+            (clone $ordProdAttrItem)->setAttributeId(10)->setValue('3'),
+            (clone $ordProdAttrItem)->setAttributeId(11)->setValue('4'),
+        ]);
 
+        $ordProdStub->expects($this->once())->method('get')
+            ->willReturn($ordProdItem);
 
-	public function testEnd()
-	{
-		$ordProdStub = $this->getMockBuilder( '\\Aimeos\\MShop\\Order\\Manager\\Product\\Standard' )
-			->setConstructorArgs( [$this->context] )
-			->onlyMethods( ['get', 'type'] )
-			->getMock();
+        $this->custStub->expects($this->once())->method('get')
+            ->willReturn($this->custStub->create());
 
-		$ordProdStub->method( 'type' )->willReturn( ['order', 'product'] );
+        $this->custStub->expects($this->once())->method('save')
+            ->with($this->callback(function ($subject) {
+                return $subject->getGroups() === [];
+            }));
 
-		\Aimeos\MShop::inject( '\\Aimeos\\MShop\\Order\\Manager\\Product\\Standard', $ordProdStub );
+        $object = new \Aimeos\Controller\Jobs\Common\Subscription\Process\Processor\Cgroup\Standard($this->context);
+        $object->end($subscription, $subscription->getOrderItem());
+    }
 
-		$subscription = $this->getSubscription();
-		$ordProdAttrManager = $ordProdStub->getSubManager( 'attribute' );
-		$ordProdAttrItem = $ordProdAttrManager->create()->setType( 'hidden' )->setCode( 'group' );
+    public function testEndCustomGroups()
+    {
+        $this->custStub->expects($this->once())->method('get')
+            ->willReturn($this->custStub->create());
 
-		$ordProdItem = $ordProdStub->create()->setAttributeItems( [
-			( clone $ordProdAttrItem )->setAttributeId( 10 )->setValue( '3' ),
-			( clone $ordProdAttrItem )->setAttributeId( 11 )->setValue( '4' ),
-		] );
+        $this->custStub->expects($this->once())->method('save')
+            ->with($this->callback(function ($subject) {
+                return $subject->getGroups() === [];
+            }));
 
-		$ordProdStub->expects( $this->once() )->method( 'get' )
-			->willReturn( $ordProdItem );
+        $subscription = $this->getSubscription();
 
-		$this->custStub->expects( $this->once() )->method( 'get' )
-			->willReturn( $this->custStub->create() );
+        $object = new \Aimeos\Controller\Jobs\Common\Subscription\Process\Processor\Cgroup\Standard($this->context);
+        $object->end($subscription, $subscription->getOrderItem());
+    }
 
-		$this->custStub->expects( $this->once() )->method( 'save' )
-			->with( $this->callback( function( $subject ) {
-				return $subject->getGroups() === [];
-			} ) );
+    protected function getSubscription()
+    {
+        $manager = \Aimeos\MShop::create($this->context, 'subscription');
+        $search = $manager->filter()->add(['subscription.dateend' => '2010-01-01']);
+        $domains = ['order', 'order/address', 'order/coupon', 'order/product', 'order/service'];
 
-		$object = new \Aimeos\Controller\Jobs\Common\Subscription\Process\Processor\Cgroup\Standard( $this->context );
-		$object->end( $subscription, $subscription->getOrderItem() );
-	}
-
-
-	public function testEndCustomGroups()
-	{
-		$this->custStub->expects( $this->once() )->method( 'get' )
-			->willReturn( $this->custStub->create() );
-
-		$this->custStub->expects( $this->once() )->method( 'save' )
-			->with( $this->callback( function( $subject ) {
-				return $subject->getGroups() === [];
-			} ) );
-
-		$subscription = $this->getSubscription();
-
-		$object = new \Aimeos\Controller\Jobs\Common\Subscription\Process\Processor\Cgroup\Standard( $this->context );
-		$object->end( $subscription, $subscription->getOrderItem() );
-	}
-
-
-	protected function getSubscription()
-	{
-		$manager = \Aimeos\MShop::create( $this->context, 'subscription' );
-		$search = $manager->filter()->add( ['subscription.dateend' => '2010-01-01'] );
-		$domains = ['order', 'order/address', 'order/coupon', 'order/product', 'order/service'];
-
-		return $manager->search( $search, $domains )->first( new \Exception( 'No subscription item found' ) );
-	}
+        return $manager->search($search, $domains)->first(new \Exception('No subscription item found'));
+    }
 }

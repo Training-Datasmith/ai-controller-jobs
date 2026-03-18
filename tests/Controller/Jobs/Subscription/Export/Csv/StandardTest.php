@@ -1,115 +1,105 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2018-2026
  */
 
-
 namespace Aimeos\Controller\Jobs\Subscription\Export\Csv;
-
 
 class StandardTest extends \PHPUnit\Framework\TestCase
 {
-	private $aimeos;
-	private $context;
-	private $object;
+    private $aimeos;
+    private $context;
+    private $object;
 
+    protected function setUp(): void
+    {
+        $this->aimeos = \TestHelper::getAimeos();
+        $this->context = \TestHelper::context();
 
-	protected function setUp() : void
-	{
-		$this->aimeos = \TestHelper::getAimeos();
-		$this->context = \TestHelper::context();
+        $this->object = new \Aimeos\Controller\Jobs\Subscription\Export\Csv\Standard($this->context, $this->aimeos);
+    }
 
-		$this->object = new \Aimeos\Controller\Jobs\Subscription\Export\Csv\Standard( $this->context, $this->aimeos );
-	}
+    protected function tearDown(): void
+    {
+        unset($this->object, $this->context, $this->aimeos);
+    }
 
+    public function testGetName()
+    {
+        $this->assertEquals('Subscription export CSV', $this->object->getName());
+    }
 
-	protected function tearDown() : void
-	{
-		unset( $this->object, $this->context, $this->aimeos );
-	}
+    public function testGetDescription()
+    {
+        $this->assertEquals('Exports subscriptions to CSV file', $this->object->getDescription());
+    }
 
+    public function testRun()
+    {
+        $mqmStub = $this->getMockBuilder('\\Aimeos\\Base\\MQueue\\Manager\\Standard')
+            ->setConstructorArgs([[]])
+            ->onlyMethods(['get'])
+            ->getMock();
 
-	public function testGetName()
-	{
-		$this->assertEquals( 'Subscription export CSV', $this->object->getName() );
-	}
+        $mqStub = $this->getMockBuilder('\\Aimeos\\Base\\MQueue\\Standard')
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getQueue'])
+            ->getMock();
 
+        $queueStub = $this->getMockBuilder('\\Aimeos\\Base\\MQueue\\Queue\\Standard')
+            ->disableOriginalConstructor()
+            ->onlyMethods(['del', 'get'])
+            ->getMock();
 
-	public function testGetDescription()
-	{
-		$this->assertEquals( 'Exports subscriptions to CSV file', $this->object->getDescription() );
-	}
+        $msgStub = $this->getMockBuilder('\\Aimeos\\Base\\MQueue\\Message\\Standard')
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getBody'])
+            ->getMock();
 
+        $this->context->setMessageQueueManager($mqmStub);
 
-	public function testRun()
-	{
-		$mqmStub = $this->getMockBuilder( '\\Aimeos\\Base\\MQueue\\Manager\\Standard' )
-			->setConstructorArgs( [[]] )
-			->onlyMethods( ['get'] )
-			->getMock();
+        $mqmStub->expects($this->once())->method('get')
+            ->willReturn($mqStub);
 
-		$mqStub = $this->getMockBuilder( '\\Aimeos\\Base\\MQueue\\Standard' )
-			->disableOriginalConstructor()
-			->onlyMethods( ['getQueue'] )
-			->getMock();
+        $mqStub->expects($this->once())->method('getQueue')
+            ->willReturn($queueStub);
 
-		$queueStub = $this->getMockBuilder( '\\Aimeos\\Base\\MQueue\\Queue\\Standard' )
-			->disableOriginalConstructor()
-			->onlyMethods( ['del', 'get'] )
-			->getMock();
+        $queueStub->expects($this->exactly(2))->method('get')
+            ->willReturn($msgStub, null);
 
-		$msgStub = $this->getMockBuilder( '\\Aimeos\\Base\\MQueue\\Message\\Standard' )
-			->disableOriginalConstructor()
-			->onlyMethods( ['getBody'] )
-			->getMock();
+        $queueStub->expects($this->once())->method('del');
 
+        $msgStub->expects($this->once())->method('getBody')
+            ->willReturn('{"sitecode":"unittest"}');
 
-		$this->context->setMessageQueueManager( $mqmStub );
+        $this->object->run();
 
+        $jobManager = \Aimeos\MAdmin::create($this->context, 'job');
+        $jobSearch = $jobManager->filter();
+        $jobSearch->setConditions($jobSearch->compare('=~', 'job.label', 'subscription-export_'));
+        $jobItems = $jobManager->search($jobSearch);
+        $jobManager->delete($jobItems->toArray());
 
-		$mqmStub->expects( $this->once() )->method( 'get' )
-			->willReturn( $mqStub );
+        $this->assertEquals(1, count($jobItems));
 
-		$mqStub->expects( $this->once() )->method( 'getQueue' )
-			->willReturn( $queueStub );
+        $filename = dirname(dirname(dirname(dirname(dirname(__DIR__))))) . '/tmp/' . $jobItems->first()->getLabel();
+        $fp = fopen($filename, 'r');
 
-		$queueStub->expects( $this->exactly( 2 ) )->method( 'get' )
-			->willReturn( $msgStub, null );
+        $subscription = fgetcsv($fp, null, ',', '"', '');
+        $address1 = fgetcsv($fp, null, ',', '"', '');
+        $address2 = fgetcsv($fp, null, ',', '"', '');
+        $product1 = fgetcsv($fp, null, ',', '"', '');
 
-		$queueStub->expects( $this->once() )->method( 'del' );
+        fclose($fp);
+        unlink($filename);
 
-		$msgStub->expects( $this->once() )->method( 'getBody' )
-			->willReturn( '{"sitecode":"unittest"}' );
-
-
-		$this->object->run();
-
-
-		$jobManager = \Aimeos\MAdmin::create( $this->context, 'job' );
-		$jobSearch = $jobManager->filter();
-		$jobSearch->setConditions( $jobSearch->compare( '=~', 'job.label', 'subscription-export_' ) );
-		$jobItems = $jobManager->search( $jobSearch );
-		$jobManager->delete( $jobItems->toArray() );
-
-		$this->assertEquals( 1, count( $jobItems ) );
-
-
-		$filename = dirname( dirname( dirname( dirname( dirname( __DIR__ ) ) ) ) ) . '/tmp/' . $jobItems->first()->getLabel();
-		$fp = fopen( $filename, 'r' );
-
-		$subscription = fgetcsv( $fp, null, ',', '"', '' );
-		$address1 = fgetcsv( $fp, null, ',', '"', '' );
-		$address2 = fgetcsv( $fp, null, ',', '"', '' );
-		$product1 = fgetcsv( $fp, null, ',', '"', '' );
-
-		fclose( $fp );
-		unlink( $filename );
-
-		$this->assertEquals( 'subscription', $subscription[0] );
-		$this->assertEquals( 'address', $address1[0] );
-		$this->assertEquals( 'address', $address2[0] );
-		$this->assertEquals( 'product', $product1[0] );
-	}
+        $this->assertEquals('subscription', $subscription[0]);
+        $this->assertEquals('address', $address1[0]);
+        $this->assertEquals('address', $address2[0]);
+        $this->assertEquals('product', $product1[0]);
+    }
 }

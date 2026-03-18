@@ -1,176 +1,165 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2015-2026
  */
 
-
 namespace Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Property;
-
 
 class StandardTest extends \PHPUnit\Framework\TestCase
 {
-	private $context;
-	private $endpoint;
+    private $context;
+    private $endpoint;
 
+    protected function setUp(): void
+    {
+        \Aimeos\MShop::cache(true);
 
-	protected function setUp() : void
-	{
-		\Aimeos\MShop::cache( true );
+        $this->context = \TestHelper::context();
+        $this->endpoint = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Done($this->context, []);
+    }
 
-		$this->context = \TestHelper::context();
-		$this->endpoint = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Done( $this->context, [] );
-	}
+    protected function tearDown(): void
+    {
+        \Aimeos\MShop::cache(false);
+    }
 
+    public function testProcess()
+    {
+        $mapping = [
+            0 => 'product.property.type',
+            1 => 'product.property.value',
+            2 => 'product.property.languageid',
+            3 => 'product.property.type',
+            4 => 'product.property.value',
+        ];
 
-	protected function tearDown() : void
-	{
-		\Aimeos\MShop::cache( false );
-	}
+        $data = [
+            0 => 'package-weight',
+            1 => '3.00',
+            2 => 'de',
+            3 => 'package-width',
+            4 => '50',
+        ];
 
+        $product = $this->create('job_csv_test');
 
-	public function testProcess()
-	{
-		$mapping = array(
-			0 => 'product.property.type',
-			1 => 'product.property.value',
-			2 => 'product.property.languageid',
-			3 => 'product.property.type',
-			4 => 'product.property.value',
-		);
+        $object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Property\Standard($this->context, $mapping, $this->endpoint);
+        $object->process($product, $data);
 
-		$data = array(
-			0 => 'package-weight',
-			1 => '3.00',
-			2 => 'de',
-			3 => 'package-width',
-			4 => '50',
-		);
+        $pos = 0;
+        $expected = [
+            [ 'package-weight', '3.00', 'de' ],
+            [ 'package-width', '50', null ],
+        ];
 
-		$product = $this->create( 'job_csv_test' );
+        $items = $product->getPropertyItems();
+        $this->assertEquals(2, count($items));
 
-		$object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Property\Standard( $this->context, $mapping, $this->endpoint );
-		$object->process( $product, $data );
+        foreach ($items as $item) {
+            $this->assertEquals($expected[$pos][0], $item->getType());
+            $this->assertEquals($expected[$pos][1], $item->getValue());
+            $this->assertEquals($expected[$pos][2], $item->getLanguageId());
+            $pos++;
+        }
+    }
 
+    public function testProcessUpdate()
+    {
+        $mapping = [
+            0 => 'product.property.type',
+            1 => 'product.property.value',
+        ];
 
-		$pos = 0;
-		$expected = array(
-			array( 'package-weight', '3.00', 'de' ),
-			array( 'package-width', '50', null ),
-		);
+        $data = [
+            0 => 'package-weight',
+            1 => '3.00',
+        ];
 
-		$items = $product->getPropertyItems();
-		$this->assertEquals( 2, count( $items ) );
+        $dataUpdate = [
+            0 => 'package-size',
+            1 => 'S',
+        ];
 
-		foreach( $items as $item )
-		{
-			$this->assertEquals( $expected[$pos][0], $item->getType() );
-			$this->assertEquals( $expected[$pos][1], $item->getValue() );
-			$this->assertEquals( $expected[$pos][2], $item->getLanguageId() );
-			$pos++;
-		}
-	}
+        $product = $this->create('job_csv_test');
 
+        $object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Property\Standard($this->context, $mapping, $this->endpoint);
+        $object->process($product, $data);
+        $object->process($product, $dataUpdate);
 
-	public function testProcessUpdate()
-	{
-		$mapping = array(
-			0 => 'product.property.type',
-			1 => 'product.property.value',
-		);
+        $object->finish(); // test if new type is created
+        $manager = \Aimeos\MShop::create($this->context, 'product/property/type');
+        $manager->delete($manager->find('package-size')->getId());
 
-		$data = array(
-			0 => 'package-weight',
-			1 => '3.00',
-		);
+        $items = $product->getPropertyItems();
+        $item = $items->first();
 
-		$dataUpdate = array(
-			0 => 'package-size',
-			1 => 'S',
-		);
+        $this->assertEquals(1, count($items));
+        $this->assertInstanceOf('\\Aimeos\\MShop\\Common\\Item\\Property\\Iface', $item);
 
-		$product = $this->create( 'job_csv_test' );
+        $this->assertEquals('package-size', $item->getType());
+        $this->assertEquals('S', $item->getValue());
+    }
 
-		$object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Property\Standard( $this->context, $mapping, $this->endpoint );
-		$object->process( $product, $data );
-		$object->process( $product, $dataUpdate );
+    public function testProcessDelete()
+    {
+        $mapping = [
+            0 => 'product.property.type',
+            1 => 'product.property.value',
+        ];
 
+        $data = [
+            0 => 'package-weight',
+            1 => '3.00',
+        ];
 
-		$object->finish(); // test if new type is created
-		$manager = \Aimeos\MShop::create( $this->context, 'product/property/type' );
-		$manager->delete( $manager->find( 'package-size' )->getId() );
+        $product = $this->create('job_csv_test');
 
-		$items = $product->getPropertyItems();
-		$item = $items->first();
+        $object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Property\Standard($this->context, $mapping, $this->endpoint);
+        $object->process($product, $data);
 
-		$this->assertEquals( 1, count( $items ) );
-		$this->assertInstanceOf( '\\Aimeos\\MShop\\Common\\Item\\Property\\Iface', $item );
+        $object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Property\Standard($this->context, [], $this->endpoint);
+        $object->process($product, []);
 
-		$this->assertEquals( 'package-size', $item->getType() );
-		$this->assertEquals( 'S', $item->getValue() );
-	}
+        $items = $product->getPropertyItems();
 
+        $this->assertEquals(0, count($items));
+    }
 
-	public function testProcessDelete()
-	{
-		$mapping = array(
-			0 => 'product.property.type',
-			1 => 'product.property.value',
-		);
+    public function testProcessEmpty()
+    {
+        $mapping = [
+            0 => 'product.property.type',
+            1 => 'product.property.value',
+            2 => 'product.property.type',
+            3 => 'product.property.value',
+        ];
 
-		$data = array(
-			0 => 'package-weight',
-			1 => '3.00',
-		);
+        $data = [
+            0 => '',
+            1 => '',
+            2 => 'package-weight',
+            3 => '3.00',
+        ];
 
-		$product = $this->create( 'job_csv_test' );
+        $product = $this->create('job_csv_test');
 
-		$object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Property\Standard( $this->context, $mapping, $this->endpoint );
-		$object->process( $product, $data );
+        $object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Property\Standard($this->context, $mapping, $this->endpoint);
+        $object->process($product, $data);
 
-		$object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Property\Standard( $this->context, [], $this->endpoint );
-		$object->process( $product, [] );
+        $items = $product->getPropertyItems();
 
+        $this->assertEquals(1, count($items));
+    }
 
-		$items = $product->getPropertyItems();
-
-		$this->assertEquals( 0, count( $items ) );
-	}
-
-
-	public function testProcessEmpty()
-	{
-		$mapping = array(
-			0 => 'product.property.type',
-			1 => 'product.property.value',
-			2 => 'product.property.type',
-			3 => 'product.property.value',
-		);
-
-		$data = array(
-			0 => '',
-			1 => '',
-			2 => 'package-weight',
-			3 => '3.00',
-		);
-
-		$product = $this->create( 'job_csv_test' );
-
-		$object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Property\Standard( $this->context, $mapping, $this->endpoint );
-		$object->process( $product, $data );
-
-		$items = $product->getPropertyItems();
-
-		$this->assertEquals( 1, count( $items ) );
-	}
-
-
-	/**
-	 * @param string $code
-	 */
-	protected function create( $code )
-	{
-		return \Aimeos\MShop::create( $this->context, 'product' )->create()->setCode( $code );
-	}
+    /**
+     * @param string $code
+     */
+    protected function create($code)
+    {
+        return \Aimeos\MShop::create($this->context, 'product')->create()->setCode($code);
+    }
 }

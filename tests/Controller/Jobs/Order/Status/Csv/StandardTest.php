@@ -1,87 +1,78 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2021-2026
  */
 
-
 namespace Aimeos\Controller\Jobs\Order\Status\Csv;
-
 
 class StandardTest extends \PHPUnit\Framework\TestCase
 {
-	private $aimeos;
-	private $context;
-	private $object;
+    private $aimeos;
+    private $context;
+    private $object;
 
+    protected function setUp(): void
+    {
+        \Aimeos\MShop::cache(true);
 
-	protected function setUp() : void
-	{
-		\Aimeos\MShop::cache( true );
+        $this->context = \TestHelper::context();
+        $this->aimeos = \TestHelper::getAimeos();
 
-		$this->context = \TestHelper::context();
-		$this->aimeos = \TestHelper::getAimeos();
+        $this->object = new \Aimeos\Controller\Jobs\Order\Status\Csv\Standard($this->context, $this->aimeos);
+    }
 
-		$this->object = new \Aimeos\Controller\Jobs\Order\Status\Csv\Standard( $this->context, $this->aimeos );
-	}
+    protected function tearDown(): void
+    {
+        \Aimeos\MShop::cache(true);
+        unset($this->object, $this->context, $this->aimeos);
+    }
 
+    public function testGetName()
+    {
+        $this->assertEquals('Order status import CSV', $this->object->getName());
+    }
 
-	protected function tearDown() : void
-	{
-		\Aimeos\MShop::cache( true );
-		unset( $this->object, $this->context, $this->aimeos );
-	}
+    public function testGetDescription()
+    {
+        $this->assertEquals('Status import for orders from CSV file', $this->object->getDescription());
+    }
 
+    public function testRun()
+    {
+        $dir = dirname(__DIR__, 5) . '/tmp/import/orderstatus';
+        file_exists($dir) ?: mkdir($dir);
+        copy(__DIR__ . '/_test/status.csv', $dir . '/status.csv');
 
-	public function testGetName()
-	{
-		$this->assertEquals( 'Order status import CSV', $this->object->getName() );
-	}
+        $this->context->config()->set('controller/jobs/order/status/csv/separator', ';');
+        $this->context->config()->set('controller/jobs/order/status/csv/skip', 1);
 
+        $orderStub = $this->getMockBuilder('\\Aimeos\\MShop\\Order\\Manager\\Standard')
+            ->setConstructorArgs([$this->context])
+            ->onlyMethods(['save', 'search'])
+            ->getMock();
 
-	public function testGetDescription()
-	{
-		$this->assertEquals( 'Status import for orders from CSV file', $this->object->getDescription() );
-	}
+        $oProdStub = $this->getMockBuilder('\\Aimeos\\MShop\\Order\\Manager\\Product\\Standard')
+            ->setConstructorArgs([$this->context])
+            ->onlyMethods(['save', 'search'])
+            ->getMock();
 
+        \Aimeos\MShop::inject('\\Aimeos\\MShop\\Order\\Manager\\Standard', $orderStub);
+        \Aimeos\MShop::inject('\\Aimeos\\MShop\\Order\\Manager\\Product\\Standard', $oProdStub);
 
-	public function testRun()
-	{
-		$dir = dirname( __DIR__, 5 ) . '/tmp/import/orderstatus';
-		file_exists( $dir ) ?: mkdir( $dir );
-		copy( __DIR__ . '/_test/status.csv', $dir . '/status.csv' );
+        $orderStub->expects($this->once())->method('search')
+            ->willReturn(map([$orderStub->create()->setId(1)]));
 
+        $oProdStub->expects($this->once())->method('search')
+            ->willReturn(map([$oProdStub->create()->setId(2)]));
 
-		$this->context->config()->set( 'controller/jobs/order/status/csv/separator', ';' );
-		$this->context->config()->set( 'controller/jobs/order/status/csv/skip', 1 );
+        $orderStub->expects($this->once())->method('save');
+        $oProdStub->expects($this->once())->method('save');
 
-
-		$orderStub = $this->getMockBuilder( '\\Aimeos\\MShop\\Order\\Manager\\Standard' )
-			->setConstructorArgs( [$this->context] )
-			->onlyMethods( ['save', 'search'] )
-			->getMock();
-
-		$oProdStub = $this->getMockBuilder( '\\Aimeos\\MShop\\Order\\Manager\\Product\\Standard' )
-			->setConstructorArgs( [$this->context] )
-			->onlyMethods( ['save', 'search'] )
-			->getMock();
-
-		\Aimeos\MShop::inject( '\\Aimeos\\MShop\\Order\\Manager\\Standard', $orderStub );
-		\Aimeos\MShop::inject( '\\Aimeos\\MShop\\Order\\Manager\\Product\\Standard', $oProdStub );
-
-
-		$orderStub->expects( $this->once() )->method( 'search' )
-			->willReturn( map( [$orderStub->create()->setId( 1 )] ) );
-
-		$oProdStub->expects( $this->once() )->method( 'search' )
-			->willReturn( map( [$oProdStub->create()->setId( 2 )] ) );
-
-		$orderStub->expects( $this->once() )->method( 'save' );
-		$oProdStub->expects( $this->once() )->method( 'save' );
-
-
-		$object = new \Aimeos\Controller\Jobs\Order\Status\Csv\Standard( $this->context, $this->aimeos );
-		$object->run();
-	}
+        $object = new \Aimeos\Controller\Jobs\Order\Status\Csv\Standard($this->context, $this->aimeos);
+        $object->run();
+    }
 }

@@ -1,63 +1,58 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2015-2026
  */
 
-
 namespace Aimeos\Controller\Jobs\Common\Product\Import\Csv\Cache\Attribute;
-
 
 class StandardTest extends \PHPUnit\Framework\TestCase
 {
-	private $object;
+    private $object;
 
+    protected function setUp(): void
+    {
+        \Aimeos\MShop::cache(true);
 
-	protected function setUp() : void
-	{
-		\Aimeos\MShop::cache( true );
+        $context = \TestHelper::context();
+        $this->object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Cache\Attribute\Standard($context);
+    }
 
-		$context = \TestHelper::context();
-		$this->object = new \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Cache\Attribute\Standard( $context );
-	}
+    protected function tearDown(): void
+    {
+        \Aimeos\MShop::cache(false);
+    }
 
+    public function testGet()
+    {
+        $item = $this->object->get('black', 'color');
 
-	protected function tearDown() : void
-	{
-		\Aimeos\MShop::cache( false );
-	}
+        $this->assertInstanceOf('\\Aimeos\\MShop\\Attribute\\Item\\Iface', $item);
+        $this->assertEquals('black', $item->getCode());
+        $this->assertEquals('color', $item->getType());
+    }
 
+    public function testGetUnknown()
+    {
+        $this->assertEquals(null, $this->object->get('cache-test', 'color'));
+    }
 
-	public function testGet()
-	{
-		$item = $this->object->get( 'black', 'color' );
+    public function testSet()
+    {
+        $item = $this->object->get('black', 'color');
 
-		$this->assertInstanceOf( '\\Aimeos\\MShop\\Attribute\\Item\\Iface', $item );
-		$this->assertEquals( 'black', $item->getCode() );
-		$this->assertEquals( 'color', $item->getType() );
-	}
+        $this->assertInstanceOf('\\Aimeos\\MShop\\Attribute\\Item\\Iface', $item);
 
+        $item->setCode('cache-test');
 
-	public function testGetUnknown()
-	{
-		$this->assertEquals( null, $this->object->get( 'cache-test', 'color' ) );
-	}
+        $this->object->set($item);
+        $item = $this->object->get('cache-test', 'color');
 
-
-	public function testSet()
-	{
-		$item = $this->object->get( 'black', 'color' );
-
-		$this->assertInstanceOf( '\\Aimeos\\MShop\\Attribute\\Item\\Iface', $item );
-
-		$item->setCode( 'cache-test' );
-
-		$this->object->set( $item );
-		$item = $this->object->get( 'cache-test', 'color' );
-
-		$this->assertInstanceOf( '\\Aimeos\\MShop\\Attribute\\Item\\Iface', $item );
-		$this->assertEquals( 'cache-test', $item->getCode() );
-		$this->assertEquals( 'color', $item->getType() );
-	}
+        $this->assertInstanceOf('\\Aimeos\\MShop\\Attribute\\Item\\Iface', $item);
+        $this->assertEquals('cache-test', $item->getCode());
+        $this->assertEquals('color', $item->getType());
+    }
 }

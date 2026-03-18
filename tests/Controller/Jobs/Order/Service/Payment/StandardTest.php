@@ -1,184 +1,166 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Metaways Infosystems GmbH, 2014
  * @copyright Aimeos (aimeos.org), 2015-2026
  */
 
-
 namespace Aimeos\Controller\Jobs\Order\Service\Payment;
-
 
 class StandardTest extends \PHPUnit\Framework\TestCase
 {
-	private $object;
+    private $object;
 
+    protected function setUp(): void
+    {
+        \Aimeos\MShop::cache(true);
 
-	protected function setUp() : void
-	{
-		\Aimeos\MShop::cache( true );
+        $context = \TestHelper::context();
+        $aimeos = \TestHelper::getAimeos();
 
-		$context = \TestHelper::context();
-		$aimeos = \TestHelper::getAimeos();
+        $this->object = new \Aimeos\Controller\Jobs\Order\Service\Payment\Standard($context, $aimeos);
+    }
 
-		$this->object = new \Aimeos\Controller\Jobs\Order\Service\Payment\Standard( $context, $aimeos );
-	}
+    protected function tearDown(): void
+    {
+        \Aimeos\MShop::cache(false);
+        unset($this->object);
+    }
 
+    public function testGetName()
+    {
+        $this->assertEquals('Capture authorized payments', $this->object->getName());
+    }
 
-	protected function tearDown() : void
-	{
-		\Aimeos\MShop::cache( false );
-		unset( $this->object );
-	}
+    public function testGetDescription()
+    {
+        $text = 'Authorized payments of orders will be captured after dispatching or after a configurable amount of time';
+        $this->assertEquals($text, $this->object->getDescription());
+    }
 
+    public function testRun()
+    {
+        $context = \TestHelper::context();
+        $aimeos = \TestHelper::getAimeos();
 
-	public function testGetName()
-	{
-		$this->assertEquals( 'Capture authorized payments', $this->object->getName() );
-	}
+        $serviceManagerStub = $this->getMockBuilder('\\Aimeos\\MShop\\Service\\Manager\\Standard')
+            ->onlyMethods([ 'getProvider', 'iterate' ])
+            ->setConstructorArgs([ $context ])
+            ->getMock();
 
+        $orderManagerStub = $this->getMockBuilder('\\Aimeos\\MShop\\Order\\Manager\\Standard')
+            ->onlyMethods([ 'save', 'iterate' ])
+            ->setConstructorArgs([ $context ])
+            ->getMock();
 
-	public function testGetDescription()
-	{
-		$text = 'Authorized payments of orders will be captured after dispatching or after a configurable amount of time';
-		$this->assertEquals( $text, $this->object->getDescription() );
-	}
+        \Aimeos\MShop::inject('\\Aimeos\\MShop\\Service\\Manager\\Standard', $serviceManagerStub);
+        \Aimeos\MShop::inject('\\Aimeos\\MShop\\Order\\Manager\\Standard', $orderManagerStub);
 
+        $serviceItem = $serviceManagerStub->create()->setType('');
+        $orderItem = $orderManagerStub->create();
 
-	public function testRun()
-	{
-		$context = \TestHelper::context();
-		$aimeos = \TestHelper::getAimeos();
+        $serviceProviderStub = $this->getMockBuilder('\\Aimeos\\MShop\\Service\\Provider\\Payment\\PrePay')
+            ->onlyMethods([ 'isImplemented', 'capture' ])
+            ->setConstructorArgs([ $context, $serviceItem ])
+            ->getMock();
 
+        $serviceManagerStub->expects($this->exactly(2))->method('iterate')
+            ->willReturn(map([$serviceItem]), null);
 
-		$serviceManagerStub = $this->getMockBuilder( '\\Aimeos\\MShop\\Service\\Manager\\Standard' )
-			->onlyMethods( array( 'getProvider', 'iterate' ) )
-			->setConstructorArgs( array( $context ) )
-			->getMock();
+        $serviceManagerStub->expects($this->once())->method('getProvider')
+            ->willReturn($serviceProviderStub);
 
-		$orderManagerStub = $this->getMockBuilder( '\\Aimeos\\MShop\\Order\\Manager\\Standard' )
-			->onlyMethods( array( 'save', 'iterate' ) )
-			->setConstructorArgs( array( $context ) )
-			->getMock();
+        $orderManagerStub->expects($this->exactly(2))->method('iterate')
+            ->willReturn(map([$orderItem]), null);
 
-		\Aimeos\MShop::inject( '\\Aimeos\\MShop\\Service\\Manager\\Standard', $serviceManagerStub );
-		\Aimeos\MShop::inject( '\\Aimeos\\MShop\\Order\\Manager\\Standard', $orderManagerStub );
+        $serviceProviderStub->expects($this->once())->method('isImplemented')
+            ->willReturn(true);
 
+        $serviceProviderStub->expects($this->once())->method('capture');
 
-		$serviceItem = $serviceManagerStub->create()->setType( '' );
-		$orderItem = $orderManagerStub->create();
+        $object = new \Aimeos\Controller\Jobs\Order\Service\Payment\Standard($context, $aimeos);
+        $object->run();
+    }
 
-		$serviceProviderStub = $this->getMockBuilder( '\\Aimeos\\MShop\\Service\\Provider\\Payment\\PrePay' )
-			->onlyMethods( array( 'isImplemented', 'capture' ) )
-			->setConstructorArgs( array( $context, $serviceItem ) )
-			->getMock();
+    public function testRunExceptionProcess()
+    {
+        $context = \TestHelper::context();
+        $aimeos = \TestHelper::getAimeos();
 
+        $orderManagerStub = $this->getMockBuilder('\\Aimeos\\MShop\\Order\\Manager\\Standard')
+            ->onlyMethods([ 'save', 'iterate' ])
+            ->setConstructorArgs([ $context ])
+            ->getMock();
 
-		$serviceManagerStub->expects( $this->exactly( 2 ) )->method( 'iterate' )
-			->willReturn( map( [$serviceItem] ), null );
+        $serviceManagerStub = $this->getMockBuilder('\\Aimeos\\MShop\\Service\\Manager\\Standard')
+            ->onlyMethods([ 'getProvider', 'iterate' ])
+            ->setConstructorArgs([ $context ])
+            ->getMock();
 
-		$serviceManagerStub->expects( $this->once() )->method( 'getProvider' )
-			->willReturn( $serviceProviderStub );
+        \Aimeos\MShop::inject('\\Aimeos\\MShop\\Service\\Manager\\Standard', $serviceManagerStub);
+        \Aimeos\MShop::inject('\\Aimeos\\MShop\\Order\\Manager\\Standard', $orderManagerStub);
 
-		$orderManagerStub->expects( $this->exactly( 2 ) )->method( 'iterate' )
-			->willReturn( map( [$orderItem] ), null );
+        $serviceItem = $serviceManagerStub->create()->setType('');
+        $orderItem = $orderManagerStub->create();
 
-		$serviceProviderStub->expects( $this->once() )->method( 'isImplemented' )
-			->willReturn( true );
+        $serviceProviderStub = $this->getMockBuilder('\\Aimeos\\MShop\\Service\\Provider\\Payment\\PrePay')
+            ->onlyMethods([ 'isImplemented', 'capture' ])
+            ->setConstructorArgs([ $context, $serviceItem ])
+            ->getMock();
 
-		$serviceProviderStub->expects( $this->once() )->method( 'capture' );
+        $serviceManagerStub->expects($this->exactly(2))->method('iterate')
+            ->willReturn(map([$serviceItem]), null);
 
+        $serviceManagerStub->expects($this->once())->method('getProvider')
+            ->willReturn($serviceProviderStub);
 
-		$object = new \Aimeos\Controller\Jobs\Order\Service\Payment\Standard( $context, $aimeos );
-		$object->run();
-	}
+        $orderManagerStub->expects($this->exactly(2))->method('iterate')
+            ->willReturn(map([$orderItem]), null);
 
+        $serviceProviderStub->expects($this->once())->method('isImplemented')
+            ->willReturn(true);
 
-	public function testRunExceptionProcess()
-	{
-		$context = \TestHelper::context();
-		$aimeos = \TestHelper::getAimeos();
+        $serviceProviderStub->expects($this->once())->method('capture')
+            ->will($this->throwException(new \Aimeos\MShop\Service\Exception('test oder service payment: capture')));
 
+        $orderManagerStub->expects($this->never())->method('save');
 
-		$orderManagerStub = $this->getMockBuilder( '\\Aimeos\\MShop\\Order\\Manager\\Standard' )
-			->onlyMethods( array( 'save', 'iterate' ) )
-			->setConstructorArgs( array( $context ) )
-			->getMock();
+        $object = new \Aimeos\Controller\Jobs\Order\Service\Payment\Standard($context, $aimeos);
+        $object->run();
+    }
 
-		$serviceManagerStub = $this->getMockBuilder( '\\Aimeos\\MShop\\Service\\Manager\\Standard' )
-			->onlyMethods( array( 'getProvider', 'iterate' ) )
-			->setConstructorArgs( array( $context ) )
-			->getMock();
+    public function testRunExceptionProvider()
+    {
+        $context = \TestHelper::context();
+        $aimeos = \TestHelper::getAimeos();
 
-		\Aimeos\MShop::inject( '\\Aimeos\\MShop\\Service\\Manager\\Standard', $serviceManagerStub );
-		\Aimeos\MShop::inject( '\\Aimeos\\MShop\\Order\\Manager\\Standard', $orderManagerStub );
+        $orderManagerStub = $this->getMockBuilder('\\Aimeos\\MShop\\Order\\Manager\\Standard')
+            ->onlyMethods([ 'save', 'iterate' ])
+            ->setConstructorArgs([ $context ])
+            ->getMock();
 
+        $serviceManagerStub = $this->getMockBuilder('\\Aimeos\\MShop\\Service\\Manager\\Standard')
+            ->onlyMethods([ 'getProvider', 'iterate' ])
+            ->setConstructorArgs([ $context ])
+            ->getMock();
 
-		$serviceItem = $serviceManagerStub->create()->setType( '' );
-		$orderItem = $orderManagerStub->create();
+        \Aimeos\MShop::inject('\\Aimeos\\MShop\\Service\\Manager\\Standard', $serviceManagerStub);
+        \Aimeos\MShop::inject('\\Aimeos\\MShop\\Order\\Manager\\Standard', $orderManagerStub);
 
-		$serviceProviderStub = $this->getMockBuilder( '\\Aimeos\\MShop\\Service\\Provider\\Payment\\PrePay' )
-			->onlyMethods( array( 'isImplemented', 'capture' ) )
-			->setConstructorArgs( array( $context, $serviceItem ) )
-			->getMock();
+        $serviceItem = $serviceManagerStub->create()->setType('');
 
+        $serviceManagerStub->expects($this->exactly(2))->method('iterate')
+            ->willReturn(map([$serviceItem]), null);
 
-		$serviceManagerStub->expects( $this->exactly( 2 ) )->method( 'iterate' )
-			->willReturn( map( [$serviceItem] ), null );
+        $serviceManagerStub->expects($this->once())->method('getProvider')
+            ->will($this->throwException(new \Aimeos\MShop\Service\Exception()));
 
-		$serviceManagerStub->expects( $this->once() )->method( 'getProvider' )
-			->willReturn( $serviceProviderStub );
+        $orderManagerStub->expects($this->never())->method('iterate');
 
-		$orderManagerStub->expects( $this->exactly( 2 ) )->method( 'iterate' )
-			->willReturn( map( [$orderItem] ), null );
-
-		$serviceProviderStub->expects( $this->once() )->method( 'isImplemented' )
-			->willReturn( true );
-
-		$serviceProviderStub->expects( $this->once() )->method( 'capture' )
-			->will( $this->throwException( new \Aimeos\MShop\Service\Exception( 'test oder service payment: capture' ) ) );
-
-		$orderManagerStub->expects( $this->never() )->method( 'save' );
-
-
-		$object = new \Aimeos\Controller\Jobs\Order\Service\Payment\Standard( $context, $aimeos );
-		$object->run();
-	}
-
-
-	public function testRunExceptionProvider()
-	{
-		$context = \TestHelper::context();
-		$aimeos = \TestHelper::getAimeos();
-
-
-		$orderManagerStub = $this->getMockBuilder( '\\Aimeos\\MShop\\Order\\Manager\\Standard' )
-			->onlyMethods( array( 'save', 'iterate' ) )
-			->setConstructorArgs( array( $context ) )
-			->getMock();
-
-		$serviceManagerStub = $this->getMockBuilder( '\\Aimeos\\MShop\\Service\\Manager\\Standard' )
-			->onlyMethods( array( 'getProvider', 'iterate' ) )
-			->setConstructorArgs( array( $context ) )
-			->getMock();
-
-		\Aimeos\MShop::inject( '\\Aimeos\\MShop\\Service\\Manager\\Standard', $serviceManagerStub );
-		\Aimeos\MShop::inject( '\\Aimeos\\MShop\\Order\\Manager\\Standard', $orderManagerStub );
-
-
-		$serviceItem = $serviceManagerStub->create()->setType( '' );
-
-		$serviceManagerStub->expects( $this->exactly( 2 ) )->method( 'iterate' )
-			->willReturn( map( [$serviceItem] ), null );
-
-		$serviceManagerStub->expects( $this->once() )->method( 'getProvider' )
-			->will( $this->throwException( new \Aimeos\MShop\Service\Exception() ) );
-
-		$orderManagerStub->expects( $this->never() )->method( 'iterate' );
-
-
-		$object = new \Aimeos\Controller\Jobs\Order\Service\Payment\Standard( $context, $aimeos );
-		$object->run();
-	}
+        $object = new \Aimeos\Controller\Jobs\Order\Service\Payment\Standard($context, $aimeos);
+        $object->run();
+    }
 }
