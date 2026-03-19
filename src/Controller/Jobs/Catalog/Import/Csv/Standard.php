@@ -188,7 +188,7 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Catalog\Import\Csv\Base im
             $logger->info(sprintf('Finished catalog import from "%1$s"', $location), 'import/csv/catalog');
         } catch (\Exception $e) {
             $logger->error('Catalog import error: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), 'import/csv/catalog');
-            $this->mail('Catalog CSV import error', $e->getMessage() . "\n" . $e->getTraceAsString());
+            $this->mail('Catalog CSV import error', $e->getMessage());
             throw new \Aimeos\Controller\Jobs\Exception($e->getMessage());
         }
     }

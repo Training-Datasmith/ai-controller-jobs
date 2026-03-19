@@ -184,7 +184,7 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
             $logger->info(sprintf('Finished catalog import from "%1$s"', $location), 'import/xml/catalog');
         } catch (\Exception $e) {
             $logger->error('Catalog import error: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), 'import/xml/catalog');
-            $this->mail('Catalog XML import error', $e->getMessage() . "\n" . $e->getTraceAsString());
+            $this->mail('Catalog XML import error', $e->getMessage());
             throw $e;
         }
     }

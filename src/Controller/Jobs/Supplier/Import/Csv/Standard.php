@@ -186,7 +186,7 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Base i
             $logger->info(sprintf('Finished supplier import from "%1$s"', $location), 'import/csv/supplier');
         } catch (\Exception $e) {
             $logger->error('Supplier import error: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), 'import/csv/supplier');
-            $this->mail('Supplier CSV import error', $e->getMessage() . "\n" . $e->getTraceAsString());
+            $this->mail('Supplier CSV import error', $e->getMessage());
             throw new \Aimeos\Controller\Jobs\Exception($e->getMessage());
         }
     }

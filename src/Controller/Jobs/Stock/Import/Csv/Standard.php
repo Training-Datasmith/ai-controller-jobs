@@ -190,7 +190,7 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
             $logger->info(sprintf('Finished stock import from "%1$s"', $location), 'import/csv/stock');
         } catch (\Exception $e) {
             $logger->error('Stock import error: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), 'import/csv/stock');
-            $this->mail('Stock CSV import error', $e->getMessage() . "\n" . $e->getTraceAsString());
+            $this->mail('Stock CSV import error', $e->getMessage());
             throw $e;
         }
     }

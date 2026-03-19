@@ -190,7 +190,7 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
             $logger->info(sprintf('Finished group import from "%1$s"', $location), 'import/xml/group');
         } catch (\Exception $e) {
             $logger->error('Customer group import error: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), 'import/xml/group');
-            $this->mail('Customer group XML import error', $e->getMessage() . "\n" . $e->getTraceAsString());
+            $this->mail('Customer group XML import error', $e->getMessage());
             throw $e;
         }
     }

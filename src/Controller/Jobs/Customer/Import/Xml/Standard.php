@@ -191,7 +191,7 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
             $logger->info(sprintf('Finished customer import from "%1$s"', $location), 'import/xml/customer');
         } catch (\Exception $e) {
             $logger->error('Customer import error: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), 'import/xml/customer');
-            $this->mail('Customer XML import error', $e->getMessage() . "\n" . $e->getTraceAsString());
+            $this->mail('Customer XML import error', $e->getMessage());
             throw $e;
         }
     }

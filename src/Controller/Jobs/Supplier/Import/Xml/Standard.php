@@ -191,7 +191,7 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
             $logger->info(sprintf('Finished supplier import from "%1$s"', $location), 'import/xml/supplier');
         } catch (\Exception $e) {
             $logger->error('Supplier import error: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), 'import/xml/supplier');
-            $this->mail('Supplier XML import error', $e->getMessage() . "\n" . $e->getTraceAsString());
+            $this->mail('Supplier XML import error', $e->getMessage());
             throw $e;
         }
     }

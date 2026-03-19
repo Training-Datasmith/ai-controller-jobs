@@ -190,7 +190,7 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Coupon\Import\Csv\Base imp
             $logger->info(sprintf('Finished coupon/code import from "%1$s"', $location), 'import/csv/coupon/code');
         } catch (\Exception $e) {
             $logger->error('Coupon import error: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), 'import/csv/couponcode');
-            $this->mail('Coupon CSV import error', $e->getMessage() . "\n" . $e->getTraceAsString());
+            $this->mail('Coupon CSV import error', $e->getMessage());
             throw $e;
         }
     }

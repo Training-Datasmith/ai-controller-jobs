@@ -214,7 +214,7 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Base im
             $logger->info(sprintf('Finished product import from "%1$s"', $location), 'import/csv/product');
         } catch (\Exception $e) {
             $logger->error('Product import error: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), 'import/csv/product');
-            $this->mail('Product CSV import error', $e->getMessage() . "\n" . $e->getTraceAsString());
+            $this->mail('Product CSV import error', $e->getMessage());
             throw new \Aimeos\Controller\Jobs\Exception($e->getMessage());
         }
     }

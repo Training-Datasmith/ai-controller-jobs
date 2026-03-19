@@ -189,7 +189,7 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
             $logger->info(sprintf('Finished attribute import from "%1$s"', $location), 'import/xml/attribute');
         } catch (\Exception $e) {
             $logger->error('Attribute import error: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), 'import/xml/attribute');
-            $this->mail('Attribute XML import error', $e->getMessage() . "\n" . $e->getTraceAsString());
+            $this->mail('Attribute XML import error', $e->getMessage());
             throw $e;
         }
     }

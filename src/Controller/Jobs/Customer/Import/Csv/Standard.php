@@ -212,7 +212,7 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Base i
             $logger->info(sprintf('Finished customer import from "%1$s"', $location), 'import/csv/customer');
         } catch (\Exception $e) {
             $logger->error('Customer import error: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), 'import/csv/customer');
-            $this->mail('Customer CSV import error', $e->getMessage() . "\n" . $e->getTraceAsString());
+            $this->mail('Customer CSV import error', $e->getMessage());
             throw new \Aimeos\Controller\Jobs\Exception($e->getMessage());
         }
     }
