@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Metaways Infosystems GmbH, 2014
@@ -9,7 +8,6 @@ declare(strict_types=1);
  * @package Controller
  * @subpackage Jobs
  */
-
 namespace Aimeos\Controller\Jobs\Order\Service\Delivery;
 
 /**
@@ -52,7 +50,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param string Last part of the class name
      * @since 2014.03
      */
-
     /** controller/jobs/order/service/delivery/decorators/excludes
      * Excludes decorators added by the "common" option from the order service delivery controllers
      *
@@ -77,7 +74,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/order/service/delivery/decorators/global
      * @see controller/jobs/order/service/delivery/decorators/local
      */
-
     /** controller/jobs/order/service/delivery/decorators/global
      * Adds a list of globally available decorators only to the order service delivery controllers
      *
@@ -100,7 +96,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/order/service/delivery/decorators/excludes
      * @see controller/jobs/order/service/delivery/decorators/local
      */
-
     /** controller/jobs/order/service/delivery/decorators/local
      * Adds a list of local decorators only to the order service delivery controllers
      *
@@ -124,27 +119,24 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/order/service/delivery/decorators/excludes
      * @see controller/jobs/order/service/delivery/decorators/global
      */
-
     /**
      * Returns the localized name of the job.
      *
      * @return string Name of the job
      */
-    public function getName(): string
+    public function get_name(): string
     {
         return $this->context()->translate('controller/jobs', 'Process order delivery services');
     }
-
     /**
      * Returns the localized description of the job.
      *
      * @return string Description of the job
      */
-    public function getDescription(): string
+    public function get_description(): string
     {
         return $this->context()->translate('controller/jobs', 'Sends paid orders to the ERP system or logistic partner');
     }
-
     /**
      * Executes the job.
      *
@@ -153,24 +145,21 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
     public function run(): void
     {
         $context = $this->context();
-        $manager = \Aimeos\MShop::create($context, 'service');
-
+        $manager = \Aimeos\M_Shop::create($context, 'service');
         $filter = $manager->filter()->add(['service.type' => 'delivery']);
         $cursor = $manager->cursor($filter);
-
         while ($items = $manager->iterate($cursor)) {
             foreach ($items as $item) {
                 try {
-                    $this->orders($manager->getProvider($item, $item->getType()));
+                    $this->orders($manager->get_provider($item, $item->get_type()));
                 } catch (\Exception $e) {
                     $str = 'Error while processing service with ID "%1$s": %2$s';
-                    $msg = sprintf($str, $item->getId(), $e->getMessage() . "\n" . $e->getTraceAsString());
+                    $msg = sprintf($str, $item->get_id(), $e->get_message() . "\n" . $e->get_trace_as_string());
                     $context->logger()->error($msg, 'order/service/delivery');
                 }
             }
         }
     }
-
     /**
      * Returns the domains that should be fetched together with the order data
      *
@@ -179,7 +168,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
     protected function domains(): array
     {
         $config = $this->context()->config();
-
         /** controller/jobs/order/service/delivery/domains
          * Associated items that should be available too in the order
          *
@@ -200,7 +188,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
         $ref = $config->get('mshop/order/manager/subdomains', []);
         return $config->get('controller/jobs/order/service/delivery/domains', $ref);
     }
-
     /**
      * Returns the payment date until orders should be processed
      *
@@ -224,7 +211,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
         $days = $this->context()->config()->get('controller/jobs/order/service/delivery/limit-days', 90);
         return date('Y-m-d 00:00:00', time() - 86400 * $days);
     }
-
     /**
      * Returns the maximum number of orders processed at once
      *
@@ -247,40 +233,29 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          */
         return $this->context()->config()->get('controller/jobs/order/service/delivery/batch-max', 100);
     }
-
     /**
      * Fetches and processes the order items
      *
      * @param \Aimeos\MShop\Service\Provider\Iface $provider Service provider for processing the orders
      */
-    protected function orders(\Aimeos\MShop\Service\Provider\Iface $provider)
+    protected function orders(\Aimeos\M_Shop\Service\Provider\Iface $provider)
     {
         $context = $this->context();
         $domains = $this->domains();
-
-        $serviceItem = $provider->getServiceItem();
-        $manager = \Aimeos\MShop::create($context, 'order');
-
+        $service_item = $provider->get_service_item();
+        $manager = \Aimeos\M_Shop::create($context, 'order');
         $filter = $manager->filter()->slice(0, $this->max());
-        $filter->add($filter->and([
-            $filter->compare('>=', 'order.datepayment', $this->limit()),
-            $filter->compare('==', 'order.statusdelivery', \Aimeos\MShop\Order\Item\Base::STAT_UNFINISHED),
-            $filter->compare('>=', 'order.statuspayment', \Aimeos\MShop\Order\Item\Base::PAY_PENDING),
-            $filter->compare('==', 'order.service.code', $serviceItem->getCode()),
-            $filter->compare('==', 'order.service.type', 'delivery'),
-        ]));
+        $filter->add($filter->and([$filter->compare('>=', 'order.datepayment', $this->limit()), $filter->compare('==', 'order.statusdelivery', \Aimeos\M_Shop\Order\Item\Base::STAT_UNFINISHED), $filter->compare('>=', 'order.statuspayment', \Aimeos\M_Shop\Order\Item\Base::PAY_PENDING), $filter->compare('==', 'order.service.code', $service_item->get_code()), $filter->compare('==', 'order.service.type', 'delivery')]));
         $cursor = $manager->cursor($filter);
-
         while ($items = $manager->iterate($cursor, $domains)) {
             try {
                 $provider->push($items);
-
                 $manager->begin();
                 $manager->save($items);
                 $manager->commit();
             } catch (\Exception $e) {
                 $str = 'Error while processing orders by delivery service "%1$s": %2$s';
-                $msg = sprintf($str, $serviceItem->getId(), $e->getMessage() . "\n" . $e->getTraceAsString());
+                $msg = sprintf($str, $service_item->get_id(), $e->get_message() . "\n" . $e->get_trace_as_string());
                 $context->logger()->error($msg, 'order/service/delivery');
             }
         }

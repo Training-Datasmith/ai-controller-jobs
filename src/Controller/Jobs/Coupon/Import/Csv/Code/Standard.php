@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2017-2026
  * @package Controller
  * @subpackage Jobs
  */
-
 namespace Aimeos\Controller\Jobs\Coupon\Import\Csv\Code;
 
 /**
@@ -51,7 +49,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Coupon\Import\Csv\Base imp
      * @param string Last part of the class name
      * @since 2017.10
      */
-
     /** controller/jobs/coupon/import/csv/code/decorators/excludes
      * Excludes decorators added by the "common" option from the coupon code import CSV job controller
      *
@@ -76,7 +73,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Coupon\Import\Csv\Base imp
      * @see controller/jobs/coupon/import/csv/code/decorators/global
      * @see controller/jobs/coupon/import/csv/code/decorators/local
      */
-
     /** controller/jobs/coupon/import/csv/code/decorators/global
      * Adds a list of globally available decorators only to the coupon code import CSV job controller
      *
@@ -99,7 +95,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Coupon\Import\Csv\Base imp
      * @see controller/jobs/coupon/import/csv/code/decorators/excludes
      * @see controller/jobs/coupon/import/csv/code/decorators/local
      */
-
     /** controller/jobs/coupon/import/csv/code/decorators/local
      * Adds a list of local decorators only to the coupon code import CSV job controller
      *
@@ -124,27 +119,24 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Coupon\Import\Csv\Base imp
      * @see controller/jobs/coupon/import/csv/code/decorators/excludes
      * @see controller/jobs/coupon/import/csv/code/decorators/global
      */
-
     /**
      * Returns the localized name of the job.
      *
      * @return string Name of the job
      */
-    public function getName(): string
+    public function get_name(): string
     {
         return $this->context()->translate('controller/jobs', 'Coupon code import CSV');
     }
-
     /**
      * Returns the localized description of the job.
      *
      * @return string Description of the job
      */
-    public function getDescription(): string
+    public function get_description(): string
     {
         return $this->context()->translate('controller/jobs', 'Imports new and updates existing coupon code from CSV files');
     }
-
     /**
      * Executes the job.
      *
@@ -155,46 +147,36 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Coupon\Import\Csv\Base imp
         $context = $this->context();
         $logger = $context->logger();
         $process = $context->process();
-
         try {
             $fs = $context->fs('fs-import');
-            $site = $context->locale()->getSiteItem()->getCode();
+            $site = $context->locale()->get_site_item()->get_code();
             $location = $this->location() . '/' . $site;
-
-            if ($fs->isDir($location) === false) {
+            if ($fs->is_dir($location) === false) {
                 return;
             }
-
             $logger->info(sprintf('Started coupon/code import from "%1$s"', $location), 'import/csv/coupon/code');
-
-            $fcn = function (\Aimeos\MShop\ContextIface $context, string $couponId, $fhandle, string $path): void {
-                $this->process($context, $couponId, $fhandle, $path);
+            $fcn = function (\Aimeos\M_Shop\Context_Iface $context, string $coupon_id, $fhandle, string $path): void {
+                $this->process($context, $coupon_id, $fhandle, $path);
             };
-
             foreach (map($fs->scan($location))->sort() as $filename) {
                 $path = $location . '/' . $filename;
                 if ($filename[0] === '.') {
                     continue;
                 }
-                if ($fs instanceof \Aimeos\Base\Filesystem\DirIface && $fs->isDir($path)) {
+                if ($fs instanceof \Aimeos\Base\Filesystem\Dir_Iface && $fs->is_dir($path)) {
                     continue;
                 }
-
-                list($couponId, ) = explode('.', $filename);
-
-                $process->start($fcn, [$context, $couponId, $fs->reads($path), $path]);
+                list($coupon_id, ) = explode('.', $filename);
+                $process->start($fcn, [$context, $coupon_id, $fs->reads($path), $path]);
             }
-
             $process->wait();
-
             $logger->info(sprintf('Finished coupon/code import from "%1$s"', $location), 'import/csv/coupon/code');
         } catch (\Exception $e) {
-            $logger->error('Coupon import error: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), 'import/csv/couponcode');
-            $this->mail('Coupon CSV import error', $e->getMessage());
+            $logger->error('Coupon import error: ' . $e->get_message() . "\n" . $e->get_trace_as_string(), 'import/csv/couponcode');
+            $this->mail('Coupon CSV import error', $e->get_message());
             throw $e;
         }
     }
-
     /**
      * Returns the position of the "coupon.code" column from the coupon item mapping
      *
@@ -202,17 +184,15 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Coupon\Import\Csv\Base imp
      * @return int Position of the "coupon.code" column
      * @throws \Aimeos\Controller\Jobs\Exception If no mapping for "coupon.code.code" is found
      */
-    protected function getCodePosition(array $mapping): int
+    protected function get_code_position(array $mapping): int
     {
         foreach ($mapping as $pos => $key) {
             if ($key === 'coupon.code.code') {
                 return $pos;
             }
         }
-
         throw new \Aimeos\Controller\Jobs\Exception(sprintf('No "coupon.code.code" column in CSV mapping found'));
     }
-
     /**
      * Imports the CSV data and creates new coupons or updates existing ones
      *
@@ -223,44 +203,32 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Coupon\Import\Csv\Base imp
      * @return int Number of coupons that couldn't be imported
      * @throws \Aimeos\Controller\Jobs\Exception
      */
-    protected function import(
-        array $items,
-        array $data,
-        string $couponId,
-        \Aimeos\Controller\Jobs\Common\Coupon\Import\Csv\Processor\Iface $processor
-    ): int {
+    protected function import(array $items, array $data, string $coupon_id, \Aimeos\Controller\Jobs\Common\Coupon\Import\Csv\Processor\Iface $processor): int
+    {
         $errors = 0;
         $context = $this->context();
-        $manager = \Aimeos\MShop::create($context, 'coupon/code');
-
+        $manager = \Aimeos\M_Shop::create($context, 'coupon/code');
         foreach ($data as $code => $list) {
             $manager->begin();
-
             try {
                 if (isset($items[$code])) {
                     $item = $items[$code];
                 } else {
                     $item = $manager->create();
                 }
-
-                $item->setParentId($couponId);
+                $item->set_parent_id($coupon_id);
                 $list = $processor->process($item, $list);
-
                 $manager->commit();
             } catch (\Exception $e) {
                 $manager->rollback();
-
                 $str = 'Unable to import coupon with code "%1$s": %2$s';
-                $msg = sprintf($str, $code, $e->getMessage() . "\n" . $e->getTraceAsString());
+                $msg = sprintf($str, $code, $e->get_message() . "\n" . $e->get_trace_as_string());
                 $context->logger()->error($msg, 'import/csv/coupon/code');
-
                 $errors++;
             }
         }
-
         return $errors;
     }
-
     /**
      * Imports content from the given container
      *
@@ -269,39 +237,30 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Coupon\Import\Csv\Base imp
      * @param resource $fhandle File handle of file to import
      * @param string $path Path to the container file
      */
-    protected function process(\Aimeos\MShop\ContextIface $context, string $couponId, $fhandle, string $path)
+    protected function process(\Aimeos\M_Shop\Context_Iface $context, string $coupon_id, $fhandle, string $path)
     {
         $total = $errors = 0;
         $logger = $context->logger();
-
         $maxcnt = $this->size();
         $skiplines = $this->skip();
         $mappings = $this->mapping();
-
         $logger->info(sprintf('Started coupon code import from "%1$s"', $path), 'import/csv/couponcode');
-
-        $processor = $this->getProcessors($mappings);
-        $codePos = $this->getCodePosition($mappings['code']);
-
+        $processor = $this->get_processors($mappings);
+        $code_pos = $this->get_code_position($mappings['code']);
         for ($i = 0; $i < $skiplines; $i++) {
             fgetcsv($fhandle, null, ',', '"', '');
         }
-
-        while (($data = $this->getData($fhandle, $maxcnt, $codePos)) !== []) {
-            $items = $this->getCouponCodeItems(array_keys($data));
-            $errors += $this->import($items, $data, $couponId, $processor);
-
+        while (($data = $this->get_data($fhandle, $maxcnt, $code_pos)) !== []) {
+            $items = $this->get_coupon_code_items(array_keys($data));
+            $errors += $this->import($items, $data, $coupon_id, $processor);
             $total += count($data);
             unset($items, $data);
         }
-
         fclose($fhandle);
         $context->fs('fs-import')->rm($path);
-
         $str = 'Finished coupon import: %1$d successful, %2$s errors, %3$s total';
         $logger->info(sprintf($str, $total - $errors, $errors, $total), 'import/csv/couponcode');
     }
-
     /**
      * Returns the path to the directory with the CSV file
      *
@@ -326,7 +285,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Coupon\Import\Csv\Base imp
          */
         return (string) $this->context()->config()->get('controller/jobs/coupon/import/csv/code/location', 'couponcode');
     }
-
     /**
      * Returns the column mapping
      *
@@ -348,9 +306,8 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Coupon\Import\Csv\Base imp
          * @see controller/jobs/coupon/import/csv/code/max-size
          * @see controller/jobs/coupon/import/csv/code/skip-lines
          */
-        return $this->context()->config()->get('controller/jobs/coupon/import/csv/code/mapping', $this->getDefaultMapping());
+        return $this->context()->config()->get('controller/jobs/coupon/import/csv/code/mapping', $this->get_default_mapping());
     }
-
     /**
      * Returns the maximum number of items processed at once
      *
@@ -376,7 +333,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Coupon\Import\Csv\Base imp
          */
         return (int) $this->context()->config()->get('controller/jobs/coupon/import/csv/code/max-size', 1000);
     }
-
     /**
      * Returns the number of lines to skip at the beginning of the file
      *

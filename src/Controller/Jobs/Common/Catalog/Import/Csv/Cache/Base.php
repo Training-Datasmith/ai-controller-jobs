@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2018-2026
  * @package Controller
  * @subpackage Common
  */
-
 namespace Aimeos\Controller\Jobs\Common\Catalog\Import\Csv\Cache;
 
 /**
@@ -19,24 +17,22 @@ namespace Aimeos\Controller\Jobs\Common\Catalog\Import\Csv\Cache;
  */
 class Base
 {
-    private \Aimeos\MShop\ContextIface $context;
-
+    private \Aimeos\M_Shop\Context_Iface $context;
     /**
      * Initializes the object
      *
      * @param \Aimeos\MShop\ContextIface $context Context object
      */
-    public function __construct(\Aimeos\MShop\ContextIface $context)
+    public function __construct(\Aimeos\M_Shop\Context_Iface $context)
     {
         $this->context = $context;
     }
-
     /**
      * Returns the context object
      *
      * @return \Aimeos\MShop\ContextIface Context object
      */
-    protected function context(): \Aimeos\MShop\ContextIface
+    protected function context(): \Aimeos\M_Shop\Context_Iface
     {
         return $this->context;
     }

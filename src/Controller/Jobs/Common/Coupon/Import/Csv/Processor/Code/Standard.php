@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2017-2026
  * @package Controller
  * @subpackage Common
  */
-
 namespace Aimeos\Controller\Jobs\Common\Coupon\Import\Csv\Processor\Code;
 
 /**
@@ -28,7 +26,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Coupon\Import\Csv\Processo
      * @param string Last part of the processor class name
      * @since 2017.10
      */
-
     /**
      * Saves the coupon code related data to the storage
      *
@@ -36,19 +33,16 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Coupon\Import\Csv\Processo
      * @param array $data List of CSV fields with position as key and data as value
      * @return array List of data which hasn't been imported
      */
-    public function process(\Aimeos\MShop\Coupon\Item\Code\Iface $item, array $data): array
+    public function process(\Aimeos\M_Shop\Coupon\Item\Code\Iface $item, array $data): array
     {
-        $manager = \Aimeos\MShop::create($this->context(), 'coupon/code');
-        $map = $this->getMappedChunk($data, $this->getMapping());
-
+        $manager = \Aimeos\M_Shop::create($this->context(), 'coupon/code');
+        $map = $this->get_mapped_chunk($data, $this->get_mapping());
         foreach ($map as $list) {
             if (trim($list['coupon.code.code']) == '') {
                 continue;
             }
-
-            $item = $manager->save($item->fromArray($list));
+            $item = $manager->save($item->from_array($list));
         }
-
         return $this->object()->process($item, $data);
     }
 }

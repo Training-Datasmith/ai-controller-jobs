@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2015-2026
  * @package Controller
  * @subpackage Customer
  */
-
 namespace Aimeos\Controller\Jobs\Customer\Email\Watch;
 
 /**
@@ -51,7 +49,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param string Last part of the class name
      * @since 2014.03
      */
-
     /** controller/jobs/customer/email/watch/decorators/excludes
      * Excludes decorators added by the "common" option from the customer email watch controllers
      *
@@ -76,7 +73,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/customer/email/watch/decorators/global
      * @see controller/jobs/customer/email/watch/decorators/local
      */
-
     /** controller/jobs/customer/email/watch/decorators/global
      * Adds a list of globally available decorators only to the customer email watch controllers
      *
@@ -99,7 +95,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/customer/email/watch/decorators/excludes
      * @see controller/jobs/customer/email/watch/decorators/local
      */
-
     /** controller/jobs/customer/email/watch/decorators/local
      * Adds a list of local decorators only to the customer email watch controllers
      *
@@ -123,31 +118,26 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/customer/email/watch/decorators/excludes
      * @see controller/jobs/customer/email/watch/decorators/global
      */
-
     use \Aimeos\Controller\Jobs\Mail;
-
     private array $sites = [];
-
     /**
      * Returns the localized name of the job.
      *
      * @return string Name of the job
      */
-    public function getName(): string
+    public function get_name(): string
     {
         return $this->context()->translate('controller/jobs', 'Product notification e-mails');
     }
-
     /**
      * Returns the localized description of the job.
      *
      * @return string Description of the job
      */
-    public function getDescription(): string
+    public function get_description(): string
     {
         return $this->context()->translate('controller/jobs', 'Sends e-mails for watched products');
     }
-
     /**
      * Executes the job.
      *
@@ -155,18 +145,15 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      */
     public function run(): void
     {
-        $manager = \Aimeos\MShop::create($this->context(), 'customer');
-
+        $manager = \Aimeos\M_Shop::create($this->context(), 'customer');
         $filter = $manager->filter(true);
         $func = $filter->make('customer:has', ['product', 'watch']);
         $filter->add($filter->is($func, '!=', null))->order('customer.id');
         $cursor = $manager->cursor($filter);
-
         while ($items = $manager->iterate($cursor, ['product' => ['watch'], 'price'])) {
             $manager->save($this->notify($items));
         }
     }
-
     /**
      * Sends product notifications for the given customers in their language
      *
@@ -177,70 +164,55 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
     {
         $date = date('Y-m-d H:i:s');
         $context = $this->context();
-
         foreach ($customers as $customer) {
-            $listItems = $customer->getListItems('product', null, null, false);
-            $products = $this->products($listItems);
-
+            $list_items = $customer->get_list_items('product', null, null, false);
+            $products = $this->products($list_items);
             try {
                 if (!empty($products)) {
-                    $sites = $this->sites($customer->getSiteId());
-                    $context->locale()->setLanguageId($customer->getPaymentAddress()->getLanguageId());
-
-                    $view = $this->view($customer->getPaymentAddress(), $sites->getTheme()->filter()->last());
+                    $sites = $this->sites($customer->get_site_id());
+                    $context->locale()->set_language_id($customer->get_payment_address()->get_language_id());
+                    $view = $this->view($customer->get_payment_address(), $sites->get_theme()->filter()->last());
                     $view->products = $products;
-
-                    $this->send($view, $customer->getPaymentAddress(), $sites->getLogo()->filter()->last());
+                    $this->send($view, $customer->get_payment_address(), $sites->get_logo()->filter()->last());
                 }
-
-                $str = sprintf('Sent product notification e-mail to "%1$s"', $customer->getPaymentAddress()->getEmail());
+                $str = sprintf('Sent product notification e-mail to "%1$s"', $customer->get_payment_address()->get_email());
                 $context->logger()->debug($str, 'email/customer/watch');
             } catch (\Exception $e) {
                 $str = 'Error while trying to send product notification e-mail for customer ID "%1$s": %2$s';
-                $msg = sprintf($str, $customer->getId(), $e->getMessage()) . PHP_EOL . $e->getTraceAsString();
+                $msg = sprintf($str, $customer->get_id(), $e->get_message()) . PHP_EOL . $e->get_trace_as_string();
                 $context->logger()->error($msg, 'email/customer/watch');
             }
-
-            $remove = $listItems->diffKeys($products)->filter(fn ($listItem) => $listItem->getDateEnd() < $date);
-
-            $customer->deleteListItems($remove);
+            $remove = $list_items->diff_keys($products)->filter(fn($list_item) => $list_item->get_date_end() < $date);
+            $customer->delete_list_items($remove);
         }
-
         return $customers;
     }
-
     /**
      * Returns a filtered list of products for which a notification should be sent
      *
      * @param \Aimeos\Map $listItems List of customer list items
      * @return array Associative list of list IDs as key and product items values
      */
-    protected function products(\Aimeos\Map $listItems): array
+    protected function products(\Aimeos\Map $list_items): array
     {
         $result = [];
-        $priceManager = \Aimeos\MShop::create($this->context(), 'price');
-
-        foreach ($listItems as $id => $listItem) {
+        $price_manager = \Aimeos\M_Shop::create($this->context(), 'price');
+        foreach ($list_items as $id => $list_item) {
             try {
-                if ($product = $listItem->getRefItem()) {
-                    $config = $listItem->getConfig();
-                    $prices = $product->getRefItems('price', 'default', 'default');
-                    $price = $priceManager->getLowestPrice($prices, 1, $config['currency'] ?? null);
-
-                    if (($config['stock'] ?? null) && $product->inStock()
-                        || ($config['price'] ?? null) && ($config['pricevalue'] ?? 0) > $price->getValue()
-                    ) {
+                if ($product = $list_item->get_ref_item()) {
+                    $config = $list_item->get_config();
+                    $prices = $product->get_ref_items('price', 'default', 'default');
+                    $price = $price_manager->get_lowest_price($prices, 1, $config['currency'] ?? null);
+                    if (($config['stock'] ?? null) && $product->in_stock() || ($config['price'] ?? null) && ($config['pricevalue'] ?? 0) > $price->get_value()) {
                         $result[$id] = $product->set('price', $price);
                     }
                 }
             } catch (\Exception) {
-                ;
-            } // no price available
+            }
+            // no price available
         }
-
         return $result;
     }
-
     /**
      * Sends the notification e-mail for the given customer address and products
      *
@@ -248,7 +220,7 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param \Aimeos\MShop\Common\Item\Address\Iface $address Address item
      * @param string|null $logoPath Path to the logo
      */
-    protected function send(\Aimeos\Base\View\Iface $view, \Aimeos\MShop\Common\Item\Address\Iface $address, ?string $logoPath = null)
+    protected function send(\Aimeos\Base\View\Iface $view, \Aimeos\M_Shop\Common\Item\Address\Iface $address, ?string $logo_path = null)
     {
         /** controller/jobs/customer/email/watch/template-html
          * Relative path to the template for the HTML part of the watch emails.
@@ -264,7 +236,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          * @since 2022.04
          * @see controller/jobs/customer/email/watch/template-text
          */
-
         /** controller/jobs/customer/email/watch/template-text
          * Relative path to the template for the text part of the watch emails.
          *
@@ -279,44 +250,32 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          * @since 2022.04
          * @see controller/jobs/customer/email/watch/template-html
          */
-
         $context = $this->context();
         $config = $context->config();
-
         $msg = $this->call('mailTo', $address);
-        $view->logo = $msg->embed($this->call('mailLogo', $logoPath), basename((string) $logoPath));
-
-        $msg->subject($context->translate('client', 'Your watched products'))
-            ->html($view->render($config->get('controller/jobs/customer/email/watch/template-html', 'customer/email/watch/html')))
-            ->text($view->render($config->get('controller/jobs/customer/email/watch/template-text', 'customer/email/watch/text')))
-            ->send();
+        $view->logo = $msg->embed($this->call('mailLogo', $logo_path), basename((string) $logo_path));
+        $msg->subject($context->translate('client', 'Your watched products'))->html($view->render($config->get('controller/jobs/customer/email/watch/template-html', 'customer/email/watch/html')))->text($view->render($config->get('controller/jobs/customer/email/watch/template-text', 'customer/email/watch/text')))->send();
     }
-
     /**
      * Returns the list of site items from the given site ID up to the root site
      *
      * @param string|null $siteId Site ID like "1.2.4."
      * @return \Aimeos\Map List of site items
      */
-    protected function sites(?string $siteId = null): \Aimeos\Map
+    protected function sites(?string $site_id = null): \Aimeos\Map
     {
-        $manager = \Aimeos\MShop::create($this->context(), 'locale/site');
-
-        if (!$siteId && !isset($this->sites[''])) {
+        $manager = \Aimeos\M_Shop::create($this->context(), 'locale/site');
+        if (!$site_id && !isset($this->sites[''])) {
             $default = $this->context()->config()->get('mshop/locale/site', 'default');
             $this->sites[''] = map($manager->find($default));
         }
-
-        if (!isset($this->sites[(string) $siteId])) {
-            $manager = \Aimeos\MShop::create($this->context(), 'locale/site');
-            $siteIds = explode('.', trim((string) $siteId, '.'));
-
-            $this->sites[$siteId] = $manager->getPath(end($siteIds));
+        if (!isset($this->sites[(string) $site_id])) {
+            $manager = \Aimeos\M_Shop::create($this->context(), 'locale/site');
+            $site_ids = explode('.', trim((string) $site_id, '.'));
+            $this->sites[$site_id] = $manager->get_path(end($site_ids));
         }
-
-        return $this->sites[$siteId];
+        return $this->sites[$site_id];
     }
-
     /**
      * Returns the view populated with common data
      *
@@ -324,16 +283,12 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param string|null $theme Theme name
      * @return \Aimeos\Base\View\Iface View object
      */
-    protected function view(\Aimeos\MShop\Common\Item\Address\Iface $address, ?string $theme = null): \Aimeos\Base\View\Iface
+    protected function view(\Aimeos\M_Shop\Common\Item\Address\Iface $address, ?string $theme = null): \Aimeos\Base\View\Iface
     {
-        $view = $this->call('mailView', $address->getLanguageId());
+        $view = $this->call('mailView', $address->get_language_id());
         $view->intro = $this->call('mailIntro', $address);
         $view->css = $this->call('mailCss', $theme);
-        $view->urlparams = [
-            'site' => $this->context()->locale()->getSiteItem()->getCode(),
-            'locale' => $address->getLanguageId(),
-        ];
-
+        $view->urlparams = ['site' => $this->context()->locale()->get_site_item()->get_code(), 'locale' => $address->get_language_id()];
         return $view;
     }
 }

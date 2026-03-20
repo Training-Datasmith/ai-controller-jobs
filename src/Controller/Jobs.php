@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, https://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2015-2026
  * @package Controller
  * @subpackage Jobs
  */
-
 namespace Aimeos\Controller;
 
 /**
@@ -20,7 +18,6 @@ namespace Aimeos\Controller;
 class Jobs
 {
     private static array $objects = [];
-
     /**
      * Creates the required controller specified by the given path of controller names.
      *
@@ -37,26 +34,18 @@ class Jobs
      * @return \Aimeos\Controller\Jobs\Iface Controller class instance
      * @throws \Aimeos\Controller\Jobs\Exception If the given path is invalid or the controllers wasn't found
      */
-    public static function create(
-        \Aimeos\MShop\ContextIface $context,
-        \Aimeos\Bootstrap $aimeos,
-        string $path,
-        ?string $name = null
-    ): \Aimeos\Controller\Jobs\Iface {
+    public static function create(\Aimeos\M_Shop\Context_Iface $context, \Aimeos\Bootstrap $aimeos, string $path, ?string $name = null): \Aimeos\Controller\Jobs\Iface
+    {
         if (empty($path)) {
             throw new \Aimeos\Controller\Jobs\Exception('Controller path is empty', 400);
         }
-
         if (empty($name)) {
             $name = $context->config()->get('controller/jobs/' . $path . '/name', 'Standard');
         }
-
         $iface = \Aimeos\Controller\Jobs\Iface::class;
-        $classname = '\\Aimeos\\Controller\\Jobs\\' . str_replace('/', '\\', ucwords($path, '/')) . '\\' . $name;
-
-        return self::createController($context, $aimeos, $classname, $iface, $path);
+        $classname = '\Aimeos\Controller\Jobs\\' . str_replace('/', '\\', ucwords($path, '/')) . '\\' . $name;
+        return self::create_controller($context, $aimeos, $classname, $iface, $path);
     }
-
     /**
      * Returns all available controller instances.
      *
@@ -65,29 +54,23 @@ class Jobs
      * @param array $cntlPaths Associative list of the base path as key and all relative job controller paths (core and extensions)
      * @return \Aimeos\Controller\Jobs\Iface[] Associative list of controller names as values and class instance as values
      */
-    public static function get(\Aimeos\MShop\ContextIface $context, \Aimeos\Bootstrap $aimeos, array $cntlPaths): array
+    public static function get(\Aimeos\M_Shop\Context_Iface $context, \Aimeos\Bootstrap $aimeos, array $cntl_paths): array
     {
-        $cntlList = [];
+        $cntl_list = [];
         $ds = DIRECTORY_SEPARATOR;
-
-        foreach ($cntlPaths as $path => $list) {
+        foreach ($cntl_paths as $path => $list) {
             foreach ($list as $relpath) {
                 $path .= $ds . str_replace('/', $ds, $relpath . '/Controller/Jobs');
-
                 if (is_dir($path)) {
-                    $it = new \DirectoryIterator($path);
-                    $list = self::createControllers($it, $context, $aimeos);
-
-                    $cntlList = array_merge($cntlList, $list);
+                    $it = new \Directory_Iterator($path);
+                    $list = self::create_controllers($it, $context, $aimeos);
+                    $cntl_list = array_merge($cntl_list, $list);
                 }
             }
         }
-
-        ksort($cntlList);
-
-        return $cntlList;
+        ksort($cntl_list);
+        return $cntl_list;
     }
-
     /**
      * Injects a controller object.
      *
@@ -98,7 +81,6 @@ class Jobs
     {
         self::$objects['\\' . ltrim($classname, '\\')] = $controller;
     }
-
     /**
      * Adds the decorators to the controller object.
      *
@@ -108,23 +90,16 @@ class Jobs
      * @param string $domain Domain name in lower case, e.g. "product"
      * @return \Aimeos\Controller\Jobs\Iface Controller object
      */
-    protected static function addControllerDecorators(
-        \Aimeos\MShop\ContextIface $context,
-        \Aimeos\Bootstrap $aimeos,
-        \Aimeos\Controller\Jobs\Iface $controller,
-        string $domain
-    ): \Aimeos\Controller\Jobs\Iface {
+    protected static function add_controller_decorators(\Aimeos\M_Shop\Context_Iface $context, \Aimeos\Bootstrap $aimeos, \Aimeos\Controller\Jobs\Iface $controller, string $domain): \Aimeos\Controller\Jobs\Iface
+    {
         $config = $context->config();
-        $localClass = str_replace('/', '\\', ucwords($domain, '/'));
-
-        $classprefix = '\Aimeos\Controller\Jobs\\' . ucfirst($localClass) . '\Decorator\\';
+        $local_class = str_replace('/', '\\', ucwords($domain, '/'));
+        $classprefix = '\Aimeos\Controller\Jobs\\' . ucfirst($local_class) . '\Decorator\\';
         $decorators = array_reverse($config->get('controller/jobs/' . $domain . '/decorators/local', []));
-        $controller = self::addDecorators($context, $aimeos, $controller, $decorators, $classprefix);
-
+        $controller = self::add_decorators($context, $aimeos, $controller, $decorators, $classprefix);
         $classprefix = '\Aimeos\Controller\Jobs\Common\Decorator\\';
         $decorators = array_reverse($config->get('controller/jobs/' . $domain . '/decorators/global', []));
-        $controller = self::addDecorators($context, $aimeos, $controller, $decorators, $classprefix);
-
+        $controller = self::add_decorators($context, $aimeos, $controller, $decorators, $classprefix);
         /** controller/jobs/common/decorators/default
          * Configures the list of decorators applied to all job controllers
          *
@@ -148,18 +123,14 @@ class Jobs
          */
         $decorators = array_reverse($config->get('controller/jobs/common/decorators/default', []));
         $excludes = $config->get('controller/jobs/' . $domain . '/decorators/excludes', []);
-
         foreach ($decorators as $key => $name) {
             if (in_array($name, $excludes)) {
                 unset($decorators[$key]);
             }
         }
-
         $classprefix = '\Aimeos\Controller\Jobs\Common\Decorator\\';
-
-        return self::addDecorators($context, $aimeos, $controller, $decorators, $classprefix);
+        return self::add_decorators($context, $aimeos, $controller, $decorators, $classprefix);
     }
-
     /**
      * Adds the decorators to the controller object.
      *
@@ -171,26 +142,17 @@ class Jobs
      * @return \Aimeos\Controller\Jobs\Iface Controller object
      * @throws \LogicException If class can't be instantiated
      */
-    protected static function addDecorators(
-        \Aimeos\MShop\ContextIface $context,
-        \Aimeos\Bootstrap $aimeos,
-        \Aimeos\Controller\Jobs\Iface $controller,
-        array $decorators,
-        string $classprefix
-    ): \Aimeos\Controller\Jobs\Iface {
+    protected static function add_decorators(\Aimeos\M_Shop\Context_Iface $context, \Aimeos\Bootstrap $aimeos, \Aimeos\Controller\Jobs\Iface $controller, array $decorators, string $classprefix): \Aimeos\Controller\Jobs\Iface
+    {
         $interface = \Aimeos\Controller\Jobs\Common\Decorator\Iface::class;
-
         foreach ($decorators as $name) {
             if (ctype_alnum($name) === false) {
                 throw new \LogicException(sprintf('Invalid class name "%1$s"', $name), 400);
             }
-
             $controller = \Aimeos\Utils::create($classprefix . $name, [$controller, $context, $aimeos], $interface);
         }
-
         return $controller;
     }
-
     /**
      * Creates a controller object.
      *
@@ -201,22 +163,14 @@ class Jobs
      * @param string $path Name of the domain
      * @return \Aimeos\Controller\Jobs\Iface Controller object
      */
-    protected static function createController(
-        \Aimeos\MShop\ContextIface $context,
-        \Aimeos\Bootstrap $aimeos,
-        string $classname,
-        string $interface,
-        string $path
-    ): \Aimeos\Controller\Jobs\Iface {
+    protected static function create_controller(\Aimeos\M_Shop\Context_Iface $context, \Aimeos\Bootstrap $aimeos, string $classname, string $interface, string $path): \Aimeos\Controller\Jobs\Iface
+    {
         if (isset(self::$objects[$classname])) {
             return self::$objects[$classname];
         }
-
         $cntl = \Aimeos\Utils::create($classname, [$context, $aimeos], $interface);
-
-        return self::addControllerDecorators($context, $aimeos, $cntl, $path);
+        return self::add_controller_decorators($context, $aimeos, $cntl, $path);
     }
-
     /**
      * Instantiates all found factories and stores the controller instances in the class variable.
      *
@@ -227,30 +181,20 @@ class Jobs
      * @return \Aimeos\Controller\Jobs\Iface[] Associative list if prefixes as values and job controller instances as values
      * @throws \Aimeos\Controller\Jobs\Exception If factory name is invalid or if the controller couldn't be instantiated
      */
-    protected static function createControllers(
-        \DirectoryIterator $dir,
-        \Aimeos\MShop\ContextIface $context,
-        \Aimeos\Bootstrap $aimeos,
-        string $prefix = ''
-    ): array {
+    protected static function create_controllers(\Directory_Iterator $dir, \Aimeos\M_Shop\Context_Iface $context, \Aimeos\Bootstrap $aimeos, string $prefix = ''): array
+    {
         $list = [];
-
         foreach ($dir as $entry) {
-            if ($entry->getType() === 'dir' && $entry->isDot() === false
-                && !in_array($entry->getBaseName(), ['Common', 'Decorator'])
-            ) {
-                $name = strtolower($entry->getBaseName());
-                $it = new \DirectoryIterator($entry->getPathName());
+            if ($entry->get_type() === 'dir' && $entry->is_dot() === false && !in_array($entry->get_base_name(), ['Common', 'Decorator'])) {
+                $name = strtolower($entry->get_base_name());
+                $it = new \Directory_Iterator($entry->get_path_name());
                 $pref = ($prefix !== '' ? $prefix . '/' : '') . $name;
-                $subList = self::createControllers($it, $context, $aimeos, $pref);
-
-                $list = array_merge($list, $subList);
-            } elseif ($prefix !== '' && $entry->getType() === 'file'
-                && !in_array($entry->getBaseName('.php'), ['Base'])) {
+                $sub_list = self::create_controllers($it, $context, $aimeos, $pref);
+                $list = array_merge($list, $sub_list);
+            } elseif ($prefix !== '' && $entry->get_type() === 'file' && !in_array($entry->get_base_name('.php'), ['Base'])) {
                 $list[$prefix] = self::create($context, $aimeos, $prefix);
             }
         }
-
         return $list;
     }
 }

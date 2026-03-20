@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Metaways Infosystems GmbH, 2014
@@ -9,7 +8,6 @@ declare(strict_types=1);
  * @package Controller
  * @subpackage Jobs
  */
-
 namespace Aimeos\Controller\Jobs\Admin\Cache;
 
 /**
@@ -52,7 +50,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param string Last part of the class name
      * @since 2014.03
      */
-
     /** controller/jobs/admin/cache/decorators/excludes
      * Excludes decorators added by the "common" option from the admin cache controllers
      *
@@ -77,7 +74,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/admin/cache/decorators/global
      * @see controller/jobs/admin/cache/decorators/local
      */
-
     /** controller/jobs/admin/cache/decorators/global
      * Adds a list of globally available decorators only to the admin cache controllers
      *
@@ -100,7 +96,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/admin/cache/decorators/excludes
      * @see controller/jobs/admin/cache/decorators/local
      */
-
     /** controller/jobs/admin/cache/decorators/local
      * Adds a list of local decorators only to the admin cache controllers
      *
@@ -124,27 +119,24 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/admin/cache/decorators/excludes
      * @see controller/jobs/admin/cache/decorators/global
      */
-
     /**
      * Returns the localized name of the job.
      *
      * @return string Name of the job
      */
-    public function getName(): string
+    public function get_name(): string
     {
         return $this->context()->translate('controller/jobs', 'Cache cleanup');
     }
-
     /**
      * Returns the localized description of the job.
      *
      * @return string Description of the job
      */
-    public function getDescription(): string
+    public function get_description(): string
     {
         return $this->context()->translate('controller/jobs', 'Removes the expired entries from the cache');
     }
-
     /**
      * Executes the job.
      *
@@ -152,6 +144,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      */
     public function run(): void
     {
-        \Aimeos\MAdmin::create($this->context(), 'cache')->getCache()->cleanup();
+        \Aimeos\M_Admin::create($this->context(), 'cache')->get_cache()->cleanup();
     }
 }

@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2015-2026
  * @package Controller
  * @subpackage Common
  */
-
 namespace Aimeos\Controller\Jobs\Common\Product\Import\Csv\Cache\Catalog;
 
 /**
@@ -28,22 +26,18 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Cache\B
      * @param string Last part of the cache class name
      * @since 2015.10
      */
-
     private array $categories = [];
-
     /**
      * Initializes the object
      *
      * @param \Aimeos\MShop\ContextIface $context Context object
      */
-    public function __construct(\Aimeos\MShop\ContextIface $context)
+    public function __construct(\Aimeos\M_Shop\Context_Iface $context)
     {
         parent::__construct($context);
-
-        $manager = \Aimeos\MShop::create($context, 'catalog');
-        $this->categories = $manager->search($manager->filter())->col(null, 'catalog.code')->toArray();
+        $manager = \Aimeos\M_Shop::create($context, 'catalog');
+        $this->categories = $manager->search($manager->filter())->col(null, 'catalog.code')->to_array();
     }
-
     /**
      * Returns the catalog ID for the given code and type
      *
@@ -56,24 +50,20 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Cache\B
         if (isset($this->categories[$code])) {
             return $this->categories[$code];
         }
-
-        $manager = \Aimeos\MShop::create($this->context(), 'catalog');
+        $manager = \Aimeos\M_Shop::create($this->context(), 'catalog');
         $search = $manager->filter()->add('catalog.code', '==', $code);
-
         if ($item = $manager->search($search)->first()) {
             $this->categories[$code] = $item;
         }
-
         return $item;
     }
-
     /**
      * Adds the catalog item to the cache
      *
      * @param \Aimeos\MShop\Common\Item\Iface $item Catalog object
      */
-    public function set(\Aimeos\MShop\Common\Item\Iface $item): void
+    public function set(\Aimeos\M_Shop\Common\Item\Iface $item): void
     {
-        $this->categories[$item->getCode()] = $item;
+        $this->categories[$item->get_code()] = $item;
     }
 }

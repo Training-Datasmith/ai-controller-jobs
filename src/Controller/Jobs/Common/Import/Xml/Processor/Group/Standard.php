@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2019-2026
  * @package Controller
  * @subpackage Common
  */
-
 namespace Aimeos\Controller\Jobs\Common\Import\Xml\Processor\Group;
 
 /**
@@ -20,7 +18,6 @@ namespace Aimeos\Controller\Jobs\Common\Import\Xml\Processor\Group;
 class Standard extends \Aimeos\Controller\Jobs\Common\Import\Xml\Processor\Base implements \Aimeos\Controller\Jobs\Common\Import\Xml\Processor\Iface
 {
     use \Aimeos\Controller\Jobs\Common\Import\Xml\Traits;
-
     /** controller/jobs/common/import/xml/processor/group/name
      * Name of the group processor implementation
      *
@@ -30,7 +27,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Import\Xml\Processor\Base 
      * @param string Last part of the processor class name
      * @since 2019.04
      */
-
     /**
      * Updates the given item using the data from the DOM node
      *
@@ -38,58 +34,46 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Import\Xml\Processor\Base 
      * @param \DOMNode $node XML document node containing a list of nodes to process
      * @return \Aimeos\MShop\Common\Item\Iface Updated item
      */
-    public function process(\Aimeos\MShop\Common\Item\Iface $item, \DOMNode $node): \Aimeos\MShop\Common\Item\Iface
+    public function process(\Aimeos\M_Shop\Common\Item\Iface $item, \Dom_Node $node): \Aimeos\M_Shop\Common\Item\Iface
     {
-        \Aimeos\Utils::implements($item, \Aimeos\MShop\Customer\Item\Iface::class);
-
-        $map = $this->getItems($node->childNodes);
+        \Aimeos\Utils::implements($item, \Aimeos\M_Shop\Customer\Item\Iface::class);
+        $map = $this->get_items($node->child_nodes);
         $list = [];
-
-        foreach ($node->childNodes as $node) {
-            if ($node->nodeName !== 'groupitem') {
+        foreach ($node->child_nodes as $node) {
+            if ($node->node_name !== 'groupitem') {
                 continue;
             }
-
-            if (($attr = $node->attributes->getNamedItem('ref')) === null) {
+            if (($attr = $node->attributes->get_named_item('ref')) === null) {
                 continue;
             }
-
-            $attrValue = \Aimeos\Base\Str::decode($attr->nodeValue);
-
-            if (!isset($map[$attrValue])) {
+            $attr_value = \Aimeos\Base\Str::decode($attr->node_value);
+            if (!isset($map[$attr_value])) {
                 continue;
             }
-
-            $list[] = $map[$attrValue]->getId();
+            $list[] = $map[$attr_value]->get_id();
         }
-
-        return $item->setGroups($list);
+        return $item->set_groups($list);
     }
-
     /**
      * Returns the attribute items for the given nodes
      *
      * @param \DomNodeList $nodes List of XML attribute item nodes
      * @return \Aimeos\MShop\Customer\Item\Group\Iface[] Associative list of customer group items with codes as keys
      */
-    protected function getItems(\DomNodeList $nodes): array
+    protected function get_items(\Dom_Node_List $nodes): array
     {
         $keys = $map = [];
-        $manager = \Aimeos\MShop::create($this->context(), 'group');
-
+        $manager = \Aimeos\M_Shop::create($this->context(), 'group');
         foreach ($nodes as $node) {
-            if ($node->nodeName === 'groupitem' && ($attr = $node->attributes->getNamedItem('ref')) !== null) {
-                $keys[\Aimeos\Base\Str::decode($attr->nodeValue)] = null;
+            if ($node->node_name === 'groupitem' && ($attr = $node->attributes->get_named_item('ref')) !== null) {
+                $keys[\Aimeos\Base\Str::decode($attr->node_value)] = null;
             }
         }
-
         $search = $manager->filter()->slice(0, count($keys));
-        $search->setConditions($search->compare('==', 'group.code', array_keys($keys)));
-
+        $search->set_conditions($search->compare('==', 'group.code', array_keys($keys)));
         foreach ($manager->search($search, []) as $item) {
-            $map[$item->getCode()] = $item;
+            $map[$item->get_code()] = $item;
         }
-
         return $map;
     }
 }

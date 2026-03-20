@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2015-2026
  * @package Controller
  * @subpackage Jobs
  */
-
 namespace Aimeos\Controller\Jobs\Product\Export;
 
 /**
@@ -51,7 +49,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param string Last part of the class name
      * @since 2015.01
      */
-
     /** controller/jobs/product/export/decorators/excludes
      * Excludes decorators added by the "common" option from the product export job controller
      *
@@ -76,7 +73,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/product/export/decorators/global
      * @see controller/jobs/product/export/decorators/local
      */
-
     /** controller/jobs/product/export/decorators/global
      * Adds a list of globally available decorators only to the product export job controller
      *
@@ -99,7 +95,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/product/export/decorators/excludes
      * @see controller/jobs/product/export/decorators/local
      */
-
     /** controller/jobs/product/export/decorators/local
      * Adds a list of local decorators only to the product export job controller
      *
@@ -124,29 +119,25 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/product/export/decorators/excludes
      * @see controller/jobs/product/export/decorators/global
      */
-
     use \Aimeos\Macro\Macroable;
-
     /**
      * Returns the localized name of the job.
      *
      * @return string Name of the job
      */
-    public function getName(): string
+    public function get_name(): string
     {
         return $this->context()->translate('controller/jobs', 'Product export');
     }
-
     /**
      * Returns the localized description of the job.
      *
      * @return string Description of the job
      */
-    public function getDescription(): string
+    public function get_description(): string
     {
         return $this->context()->translate('controller/jobs', 'Exports all available products');
     }
-
     /**
      * Executes the job.
      *
@@ -154,20 +145,17 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      */
     public function run(): void
     {
-        $manager = \Aimeos\MShop::create($this->context(), 'product');
+        $manager = \Aimeos\M_Shop::create($this->context(), 'product');
         $filter = $manager->filter()->order('product.id')->slice(0, $this->max());
         $cursor = $manager->cursor($filter);
-
         $domains = $this->domains();
         $fs = $this->fs();
         $filenum = 1;
-
         while ($items = $manager->iterate($cursor, $domains)) {
             $items = $this->call('hydrate', $items);
             $fs->write($this->call('filename', $filenum++), $this->render($items));
         }
     }
-
     /**
      * Returns the domain names whose items should be exported too
      *
@@ -189,10 +177,8 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          * @see controller/jobs/product/export/max-items
          */
         $default = ['attribute', 'media', 'price', 'product', 'text'];
-
         return $this->context()->config()->get('controller/jobs/product/export/domains', $default);
     }
-
     /**
      * Returns the file name for the new content file
      *
@@ -214,10 +200,8 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          * @see controller/jobs/product/export/domains
          */
         $name = $this->context()->config()->get('controller/jobs/product/export/filename', 'aimeos-products-%1$d_%2$s.xml');
-
         return sprintf($name, $number, date('Y-m-d_H:i:s'));
     }
-
     /**
      * Returns the file system for storing the exported files
      *
@@ -227,7 +211,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
     {
         return $this->context()->fs('fs-export');
     }
-
     /**
      * Hydrates the given list of items
      *
@@ -238,7 +221,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
     {
         return $items;
     }
-
     /**
      * Returns the maximum number of exported products per file
      *
@@ -261,7 +243,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          */
         return $this->context()->config()->get('controller/jobs/product/export/max-items', 10000);
     }
-
     /**
      * Renders the output for the given items
      *
@@ -293,12 +274,9 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          */
         $tplconf = 'controller/jobs/product/export/template-items';
         $default = 'product/export/items-body-standard';
-
         $context = $this->context();
         $view = $context->view();
-
-        $view->exportItems = $items;
-
+        $view->export_items = $items;
         return $view->render($context->config()->get($tplconf, $default));
     }
 }

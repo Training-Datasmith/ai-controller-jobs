@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2021-2026
  * @package Controller
  * @subpackage Jobs
  */
-
 namespace Aimeos\Controller\Jobs\Order\Service\Transfer;
 
 /**
@@ -51,7 +49,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param string Last part of the class name
      * @since 2021.10
      */
-
     /** controller/jobs/order/service/transfer/decorators/excludes
      * Excludes decorators added by the "common" option from the order service transfer controllers
      *
@@ -76,7 +73,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/order/service/transfer/decorators/global
      * @see controller/jobs/order/service/transfer/decorators/local
      */
-
     /** controller/jobs/order/service/transfer/decorators/global
      * Adds a list of globally available decorators only to the order service transfer controllers
      *
@@ -99,7 +95,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/order/service/transfer/decorators/excludes
      * @see controller/jobs/order/service/transfer/decorators/local
      */
-
     /** controller/jobs/order/service/transfer/decorators/local
      * Adds a list of local decorators only to the order service transfer controllers
      *
@@ -123,55 +118,48 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/order/service/transfer/decorators/excludes
      * @see controller/jobs/order/service/transfer/decorators/global
      */
-
     /**
      * Returns the localized name of the job.
      *
      * @return string Name of the job
      */
-    public function getName(): string
+    public function get_name(): string
     {
         return $this->context()->translate('controller/jobs', 'Transfers money to vendors');
     }
-
     /**
      * Returns the localized description of the job.
      *
      * @return string Description of the job
      */
-    public function getDescription(): string
+    public function get_description(): string
     {
         return $this->context()->translate('controller/jobs', 'Transfers the price of ordered products to the vendors incl. commission handling');
     }
-
     /**
      * Executes the job.
      */
     public function run(): void
     {
         $context = $this->context();
-        $manager = \Aimeos\MShop::create($context, 'service');
-
+        $manager = \Aimeos\M_Shop::create($context, 'service');
         $filter = $manager->filter()->add(['service.type' => 'payment']);
         $cursor = $manager->cursor($filter);
-
         while ($items = $manager->iterate($cursor)) {
             foreach ($items as $item) {
                 try {
-                    $provider = $manager->getProvider($item, $item->getType());
-
-                    if ($provider->isImplemented(\Aimeos\MShop\Service\Provider\Payment\Base::FEAT_TRANSFER)) {
+                    $provider = $manager->get_provider($item, $item->get_type());
+                    if ($provider->is_implemented(\Aimeos\M_Shop\Service\Provider\Payment\Base::FEAT_TRANSFER)) {
                         $this->orders($provider);
                     }
                 } catch (\Exception $e) {
                     $str = 'Error while transferring payment for service with ID "%1$s": %2$s';
-                    $msg = sprintf($str, $item->getId(), $e->getMessage() . "\n" . $e->getTraceAsString());
+                    $msg = sprintf($str, $item->get_id(), $e->get_message() . "\n" . $e->get_trace_as_string());
                     $context->logger()->error($msg, 'order/service/transfer');
                 }
             }
         }
     }
-
     /**
      * Returns the number of days to postpone transfers
      *
@@ -191,7 +179,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
         $days = $this->context()->config()->get('controller/jobs/order/service/transfer/transfer-days', 0);
         return date('Y-m-d H:i:s', time() - 86400 * $days);
     }
-
     /**
      * Returns the domains used when fetching orders
      *
@@ -200,7 +187,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
     protected function domains(): array
     {
         $config = $this->context()->config();
-
         /** controller/jobs/order/service/transfer/domains
          * Associated items that should be available too in the order
          *
@@ -219,7 +205,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
         $ref = $config->get('mshop/order/manager/subdomains', []);
         return $config->get('controller/jobs/order/service/transfer/domains', $ref);
     }
-
     /**
      * Returns the maximum number of orders processed at once
      *
@@ -242,36 +227,27 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          */
         return $this->context()->config()->get('controller/jobs/order/service/transfer/batch-max', 100);
     }
-
     /**
      * Fetches and processes the order items
      *
      * @param \Aimeos\MShop\Service\Provider\Iface $provider Service provider for processing the orders
      */
-    protected function orders(\Aimeos\MShop\Service\Provider\Iface $provider)
+    protected function orders(\Aimeos\M_Shop\Service\Provider\Iface $provider)
     {
         $context = $this->context();
         $domains = $this->domains();
-
-        $serviceItem = $provider->getServiceItem();
-        $manager = \Aimeos\MShop::create($context, 'order');
-
+        $service_item = $provider->get_service_item();
+        $manager = \Aimeos\M_Shop::create($context, 'order');
         $filter = $manager->filter()->slice(0, $this->max());
-        $filter->setConditions($filter->and([
-            $filter->compare('<=', 'order.ctime', $this->limit()),
-            $filter->compare('==', 'order.statuspayment', \Aimeos\MShop\Order\Item\Base::PAY_RECEIVED),
-            $filter->compare('==', 'order.service.code', $serviceItem->getCode()),
-            $filter->compare('==', 'order.service.type', 'payment'),
-        ]));
+        $filter->set_conditions($filter->and([$filter->compare('<=', 'order.ctime', $this->limit()), $filter->compare('==', 'order.statuspayment', \Aimeos\M_Shop\Order\Item\Base::PAY_RECEIVED), $filter->compare('==', 'order.service.code', $service_item->get_code()), $filter->compare('==', 'order.service.type', 'payment')]));
         $cursor = $manager->cursor($filter);
-
         while ($items = $manager->iterate($cursor, $domains)) {
             foreach ($items as $item) {
                 try {
                     $manager->save($provider->transfer($item));
                 } catch (\Exception $e) {
                     $str = 'Error while transferring payment for order with ID "%1$s": %2$s';
-                    $msg = sprintf($str, $item->getId(), $e->getMessage() . "\n" . $e->getTraceAsString());
+                    $msg = sprintf($str, $item->get_id(), $e->get_message() . "\n" . $e->get_trace_as_string());
                     $context->logger()->error($msg, 'order/service/transfer');
                 }
             }

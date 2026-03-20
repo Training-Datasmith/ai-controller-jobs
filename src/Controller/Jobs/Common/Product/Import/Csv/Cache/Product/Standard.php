@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2015-2026
  * @package Controller
  * @subpackage Common
  */
-
 namespace Aimeos\Controller\Jobs\Common\Product\Import\Csv\Cache\Product;
 
 /**
@@ -28,9 +26,7 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Cache\B
      * @param string Last part of the cache class name
      * @since 2015.10
      */
-
     private array $prodmap = [];
-
     /**
      * Returns the product ID for the given code
      *
@@ -43,25 +39,21 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Cache\B
         if (isset($this->prodmap[$code])) {
             return $this->prodmap[$code];
         }
-
-        $manager = \Aimeos\MShop::create($this->context(), 'product');
-
+        $manager = \Aimeos\M_Shop::create($this->context(), 'product');
         $search = $manager->filter();
-        $search->setConditions($search->compare('==', 'product.code', $code));
-
+        $search->set_conditions($search->compare('==', 'product.code', $code));
         if (($item = $manager->search($search)->first()) !== null) {
-            $this->prodmap[$code] = $item->getId();
+            $this->prodmap[$code] = $item->get_id();
             return $this->prodmap[$code];
         }
     }
-
     /**
      * Adds the product ID to the cache
      *
      * @param \Aimeos\MShop\Common\Item\Iface $item Product object
      */
-    public function set(\Aimeos\MShop\Common\Item\Iface $item): void
+    public function set(\Aimeos\M_Shop\Common\Item\Iface $item): void
     {
-        $this->prodmap[$item->getCode()] = $item->getId();
+        $this->prodmap[$item->get_code()] = $item->get_id();
     }
 }

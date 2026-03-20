@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2018-2026
  * @package Controller
  * @subpackage Jobs
  */
-
 namespace Aimeos\Controller\Jobs\Subscription\Process\End;
 
 /**
@@ -51,7 +49,6 @@ class Standard extends \Aimeos\Controller\Jobs\Subscription\Process\Base impleme
      * @param string Last part of the class name
      * @since 2018.04
      */
-
     /** controller/jobs/subscription/process/end/decorators/excludes
      * Excludes decorators added by the "common" option from the subscription process CSV job controller
      *
@@ -76,7 +73,6 @@ class Standard extends \Aimeos\Controller\Jobs\Subscription\Process\Base impleme
      * @see controller/jobs/subscription/process/end/decorators/global
      * @see controller/jobs/subscription/process/end/decorators/local
      */
-
     /** controller/jobs/subscription/process/end/decorators/global
      * Adds a list of globally available decorators only to the subscription process CSV job controller
      *
@@ -99,7 +95,6 @@ class Standard extends \Aimeos\Controller\Jobs\Subscription\Process\Base impleme
      * @see controller/jobs/subscription/process/end/decorators/excludes
      * @see controller/jobs/subscription/process/end/decorators/local
      */
-
     /** controller/jobs/subscription/process/end/decorators/local
      * Adds a list of local decorators only to the subscription process CSV job controller
      *
@@ -124,27 +119,24 @@ class Standard extends \Aimeos\Controller\Jobs\Subscription\Process\Base impleme
      * @see controller/jobs/subscription/process/end/decorators/excludes
      * @see controller/jobs/subscription/process/end/decorators/global
      */
-
     /**
      * Returns the localized name of the job.
      *
      * @return string Name of the job
      */
-    public function getName(): string
+    public function get_name(): string
     {
         return $this->context()->translate('controller/jobs', 'Subscription process end');
     }
-
     /**
      * Returns the localized description of the job.
      *
      * @return string Description of the job
      */
-    public function getDescription(): string
+    public function get_description(): string
     {
         return $this->context()->translate('controller/jobs', 'Terminates expired subscriptions');
     }
-
     /**
      * Executes the job.
      *
@@ -154,31 +146,25 @@ class Standard extends \Aimeos\Controller\Jobs\Subscription\Process\Base impleme
     {
         $context = $this->context();
         $domains = $this->domains();
-        $processors = $this->getProcessors($this->names());
-
-        $manager = \Aimeos\MShop::create($context, 'subscription');
-
+        $processors = $this->get_processors($this->names());
+        $manager = \Aimeos\M_Shop::create($context, 'subscription');
         $filter = $manager->filter(true)->add('subscription.dateend', '<', date('Y-m-d H:i:s'))->slice(0, $this->max());
         $cursor = $manager->cursor($filter);
-
         while ($items = $manager->iterate($cursor, $domains)) {
             foreach ($items as $item) {
                 $manager->begin();
-
                 try {
                     $manager->save($this->process($item, $processors));
                     $manager->commit();
                 } catch (\Exception $e) {
                     $manager->rollback();
-
                     $str = 'Unable to end subscription with ID "%1$s": %2$s';
-                    $msg = sprintf($str, $item->getId(), $e->getMessage() . "\n" . $e->getTraceAsString());
+                    $msg = sprintf($str, $item->get_id(), $e->get_message() . "\n" . $e->get_trace_as_string());
                     $context->logger()->error($msg, 'subscription/process/end');
                 }
             }
         }
     }
-
     /**
      * Returns the domains that should be fetched together with the order data
      *
@@ -187,7 +173,6 @@ class Standard extends \Aimeos\Controller\Jobs\Subscription\Process\Base impleme
     protected function domains(): array
     {
         $config = $this->context()->config();
-
         /** controller/jobs/subscription/process/domains
          * Associated items that should be available too in the subscription
          *
@@ -210,7 +195,6 @@ class Standard extends \Aimeos\Controller\Jobs\Subscription\Process\Base impleme
         $ref = ['order'] + $config->get('mshop/order/manager/subdomains', []);
         return $config->get('controller/jobs/subscription/process/domains', $ref);
     }
-
     /**
      * Returns the maximum number of orders processed at once
      *
@@ -234,7 +218,6 @@ class Standard extends \Aimeos\Controller\Jobs\Subscription\Process\Base impleme
          */
         return $this->context()->config()->get('controller/jobs/subscription/process/batch-max', 100);
     }
-
     /**
      * Returns the names of the subscription processors
      *
@@ -258,7 +241,6 @@ class Standard extends \Aimeos\Controller\Jobs\Subscription\Process\Base impleme
          */
         return (array) $this->context()->config()->get('controller/jobs/subscription/process/processors', []);
     }
-
     /**
      * Runs the passed processors over all items and updates the properties
      *
@@ -266,16 +248,14 @@ class Standard extends \Aimeos\Controller\Jobs\Subscription\Process\Base impleme
      * @param iterable $processors List of processor objects
      * @return \Aimeos\MShop\Subscription\Item\Iface Updated subscription item
      */
-    protected function process(\Aimeos\MShop\Subscription\Item\Iface $item, iterable $processors): \Aimeos\MShop\Subscription\Item\Iface
+    protected function process(\Aimeos\M_Shop\Subscription\Item\Iface $item, iterable $processors): \Aimeos\M_Shop\Subscription\Item\Iface
     {
         foreach ($processors as $processor) {
-            $processor->end($item, $item->getOrderItem());
+            $processor->end($item, $item->get_order_item());
         }
-
-        if (($reason = $item->getReason()) === null) {
-            $reason = \Aimeos\MShop\Subscription\Item\Iface::REASON_END;
+        if (($reason = $item->get_reason()) === null) {
+            $reason = \Aimeos\M_Shop\Subscription\Item\Iface::REASON_END;
         }
-
-        return $item->setReason($reason)->setStatus(0);
+        return $item->set_reason($reason)->set_status(0);
     }
 }

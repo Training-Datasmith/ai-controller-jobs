@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Metaways Infosystems GmbH, 2014
@@ -9,7 +8,6 @@ declare(strict_types=1);
  * @package Controller
  * @subpackage Jobs
  */
-
 namespace Aimeos\Controller\Jobs\Order\Service\Async;
 
 /**
@@ -52,7 +50,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param string Last part of the class name
      * @since 2014.07
      */
-
     /** controller/jobs/order/service/async/decorators/excludes
      * Excludes decorators added by the "common" option from the order service async controllers
      *
@@ -77,7 +74,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/order/service/async/decorators/global
      * @see controller/jobs/order/service/async/decorators/local
      */
-
     /** controller/jobs/order/service/async/decorators/global
      * Adds a list of globally available decorators only to the order service async controllers
      *
@@ -100,7 +96,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/order/service/async/decorators/excludes
      * @see controller/jobs/order/service/async/decorators/local
      */
-
     /** controller/jobs/order/service/async/decorators/local
      * Adds a list of local decorators only to the order service async controllers
      *
@@ -124,27 +119,24 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/order/service/async/decorators/excludes
      * @see controller/jobs/order/service/async/decorators/global
      */
-
     /**
      * Returns the localized name of the job.
      *
      * @return string Name of the job
      */
-    public function getName(): string
+    public function get_name(): string
     {
         return $this->context()->translate('controller/jobs', 'Batch update of payment/delivery status');
     }
-
     /**
      * Returns the localized description of the job.
      *
      * @return string Description of the job
      */
-    public function getDescription(): string
+    public function get_description(): string
     {
         return $this->context()->translate('controller/jobs', 'Executes payment or delivery service providers that uses batch updates');
     }
-
     /**
      * Executes the job.
      *
@@ -153,18 +145,16 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
     public function run(): void
     {
         $context = $this->context();
-        $manager = \Aimeos\MShop::create($context, 'service');
-
+        $manager = \Aimeos\M_Shop::create($context, 'service');
         $filter = $manager->filter();
         $cursor = $manager->cursor($filter);
-
         while ($items = $manager->iterate($cursor)) {
             foreach ($items as $item) {
                 try {
-                    $manager->getProvider($item, $item->getType())->updateAsync();
+                    $manager->get_provider($item, $item->get_type())->update_async();
                 } catch (\Exception $e) {
                     $str = 'Executing updateAsyc() of "%1$s" failed: %2$s';
-                    $msg = sprintf($str, $item->getProvider(), $e->getMessage() . "\n" . $e->getTraceAsString());
+                    $msg = sprintf($str, $item->get_provider(), $e->get_message() . "\n" . $e->get_trace_as_string());
                     $context->logger()->error($msg, 'order/service/async');
                 }
             }

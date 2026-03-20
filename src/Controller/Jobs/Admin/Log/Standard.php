@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Metaways Infosystems GmbH, 2014
@@ -9,7 +8,6 @@ declare(strict_types=1);
  * @package Controller
  * @subpackage Jobs
  */
-
 namespace Aimeos\Controller\Jobs\Admin\Log;
 
 /**
@@ -52,7 +50,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param string Last part of the class name
      * @since 2014.09
      */
-
     /** controller/jobs/admin/log/decorators/excludes
      * Excludes decorators added by the "common" option from the admin log controllers
      *
@@ -77,7 +74,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/admin/log/decorators/global
      * @see controller/jobs/admin/log/decorators/local
      */
-
     /** controller/jobs/admin/log/decorators/global
      * Adds a list of globally available decorators only to the admin log controllers
      *
@@ -100,7 +96,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/admin/log/decorators/excludes
      * @see controller/jobs/admin/log/decorators/local
      */
-
     /** controller/jobs/admin/log/decorators/local
      * Adds a list of local decorators only to the admin log controllers
      *
@@ -124,27 +119,24 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/admin/log/decorators/excludes
      * @see controller/jobs/admin/log/decorators/global
      */
-
     /**
      * Returns the localized name of the job.
      *
      * @return string Name of the job
      */
-    public function getName(): string
+    public function get_name(): string
     {
         return $this->context()->translate('controller/jobs', 'Log cleanup');
     }
-
     /**
      * Returns the localized description of the job.
      *
      * @return string Description of the job
      */
-    public function getDescription(): string
+    public function get_description(): string
     {
         return $this->context()->translate('controller/jobs', 'Removes the old log entries from the database and archives them (optional)');
     }
-
     /**
      * Executes the job.
      *
@@ -155,26 +147,21 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
         $fh = $this->tempfile();
         $context = $this->context();
         $fs = $context->fs('fs-admin');
-
-        $manager = \Aimeos\MAdmin::create($context, 'log');
+        $manager = \Aimeos\M_Admin::create($context, 'log');
         $filter = $manager->filter()->add('log.timestamp', '<=', $this->timestamp())->order('log.timestamp');
         $cursor = $manager->cursor($filter->slice(0, 1000));
-
         while ($items = $manager->iterate($cursor)) {
             foreach ($items as $item) {
-                if (fputcsv($fh, $item->toArray(), ',', '"', '') === false) {
+                if (fputcsv($fh, $item->to_array(), ',', '"', '') === false) {
                     throw new \Aimeos\Controller\Jobs\Exception('Unable to write log data to temporary file');
                 }
             }
-
             $manager->delete($items);
         }
-
         rewind($fh);
         $fs->writes($this->path(), $fh);
         fclose($fh);
     }
-
     /**
      * Returns the path where the export file should be stored
      */
@@ -194,10 +181,8 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          * @see controller/jobs/admin/log/limit-days
          */
         $path = $this->context()->config()->get('controller/jobs/admin/log/path', 'logs');
-
         return $path . '/aimeos_' . date('Y-m-d') . '.log';
     }
-
     /**
      * Returns a file handle for a temporary file
      *
@@ -208,10 +193,8 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
         if (($fh = tmpfile()) === false) {
             throw new \Aimeos\Controller\Jobs\Exception('Unable to create temporary file');
         }
-
         return $fh;
     }
-
     /**
      * Returns the timestamp until the logs entries should be moved
      *

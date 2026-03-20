@@ -4,20 +4,16 @@
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2019-2026
  */
-
 /** Available data
  * - orderItem: Order item
  * - summaryBasket : Order item (basket) with addresses, services, products, etc.
  */
-
-$totalQty = 0;
+$total_qty = 0;
 $enc = $this->encoder();
-
 $pricetype = 'price:default';
 $pricefmt = $this->translate('controller/jobs', $pricetype);
 /// Price format with price value (%1$s) and currency (%2$s)
-$pricefmt = ($pricefmt === 'price:default' ? $this->translate('controller/jobs', '%1$s %2$s') : $pricefmt);
-
+$pricefmt = $pricefmt === 'price:default' ? $this->translate('controller/jobs', '%1$s %2$s') : $pricefmt;
 ?>
 <style>
 	.basket .label { width: 45%; text-align: left }
@@ -31,134 +27,281 @@ $pricefmt = ($pricefmt === 'price:default' ? $this->translate('controller/jobs',
 </style>
 <table class="basket" cellpadding="5">
 	<tr class="header">
-		<th class="label"><?= $enc->html($this->translate('controller/jobs', 'Name'), $enc::TRUST) ?></th>
-		<th class="code"><?= $enc->html($this->translate('controller/jobs', 'Article no.'), $enc::TRUST) ?></th>
-		<th class="quantity"><?= $enc->html($this->translate('controller/jobs', 'Qty'), $enc::TRUST) ?></th>
-		<th class="price"><?= $enc->html($this->translate('controller/jobs', 'Sum'), $enc::TRUST) ?></th>
+		<th class="label"><?php 
+echo $enc->html($this->translate('controller/jobs', 'Name'), $enc::TRUST);
+?></th>
+		<th class="code"><?php 
+echo $enc->html($this->translate('controller/jobs', 'Article no.'), $enc::TRUST);
+?></th>
+		<th class="quantity"><?php 
+echo $enc->html($this->translate('controller/jobs', 'Qty'), $enc::TRUST);
+?></th>
+		<th class="price"><?php 
+echo $enc->html($this->translate('controller/jobs', 'Sum'), $enc::TRUST);
+?></th>
 	</tr>
-	<?php foreach ($this->summaryBasket->getProducts() as $product) : $totalQty += $product->getQuantity() ?>
+	<?php 
+foreach ($this->summary_basket->get_products() as $product) {
+    $total_qty += $product->get_quantity();
+    ?>
 		<tr class="body product">
 			<td class="label">
-				<?= $enc->html($product->getName(), $enc::TRUST) ?>
-				<?php if (($desc = $product->getDescription()) !== '') : ?>
-					<p class="product-description"><?= $enc->html($desc) ?></p>
-				<?php endif ?>
-				<?php foreach (['variant', 'config', 'custom'] as $attrType) : ?>
-					<?php if (!($attributes = $product->getAttributeItems($attrType))->isEmpty()) : ?>
-						<ul class="attr-list attr-type-<?= $enc->attr($attrType) ?>">
-							<?php foreach ($attributes as $attribute) : ?>
-								<li class="attr-item attr-code-<?= $enc->attr($attribute->getCode()) ?>">
-									<span class="name"><?= $enc->html($this->translate('controller/jobs', $attribute->getCode())) ?>:</span>
+				<?php 
+    echo $enc->html($product->get_name(), $enc::TRUST);
+    ?>
+				<?php 
+    if (($desc = $product->get_description()) !== '') {
+        ?>
+					<p class="product-description"><?php 
+        echo $enc->html($desc);
+        ?></p>
+				<?php 
+    }
+    ?>
+				<?php 
+    foreach (['variant', 'config', 'custom'] as $attr_type) {
+        ?>
+					<?php 
+        if (!($attributes = $product->get_attribute_items($attr_type))->is_empty()) {
+            ?>
+						<ul class="attr-list attr-type-<?php 
+            echo $enc->attr($attr_type);
+            ?>">
+							<?php 
+            foreach ($attributes as $attribute) {
+                ?>
+								<li class="attr-item attr-code-<?php 
+                echo $enc->attr($attribute->get_code());
+                ?>">
+									<span class="name"><?php 
+                echo $enc->html($this->translate('controller/jobs', $attribute->get_code()));
+                ?>:</span>
 									<span class="value">
-										<?php if ($attribute->getQuantity() > 1) : ?>
-											<?= $enc->html($attribute->getQuantity()) ?>×
-										<?php endif ?>
-										<?= $enc->html($attrType !== 'custom' && $attribute->getName() ? $attribute->getName() : $attribute->getValue()) ?>
+										<?php 
+                if ($attribute->get_quantity() > 1) {
+                    ?>
+											<?php 
+                    echo $enc->html($attribute->get_quantity());
+                    ?>×
+										<?php 
+                }
+                ?>
+										<?php 
+                echo $enc->html($attr_type !== 'custom' && $attribute->get_name() ? $attribute->get_name() : $attribute->get_value());
+                ?>
 									</span>
 								</li>
-							<?php endforeach ?>
+							<?php 
+            }
+            ?>
 						</ul>
-					<?php endif ?>
-				<?php endforeach ?>
+					<?php 
+        }
+        ?>
+				<?php 
+    }
+    ?>
 			</td>
 			<td class="code">
-				<?= $product->getProductCode() ?>
+				<?php 
+    echo $product->get_product_code();
+    ?>
 			</td>
 			<td class="quantity">
-				<?= $enc->html($product->getQuantity()) ?>
+				<?php 
+    echo $enc->html($product->get_quantity());
+    ?>
 			</td>
 			<td class="price">
-				<?= $enc->html(sprintf($pricefmt, $this->number($product->getPrice()->getValue() * $product->getQuantity(), $product->getPrice()->getPrecision()), $this->translate('currency', $product->getPrice()->getCurrencyId()))) ?>
+				<?php 
+    echo $enc->html(sprintf($pricefmt, $this->number($product->get_price()->get_value() * $product->get_quantity(), $product->get_price()->get_precision()), $this->translate('currency', $product->get_price()->get_currency_id())));
+    ?>
 			</td>
 		</tr>
-	<?php endforeach ?>
+	<?php 
+}
+?>
 
-	<?php foreach ($this->summaryBasket->getService('delivery') as $service) : ?>
-		<?php if ($service->getPrice()->getValue() > 0) : $priceItem = $service->getPrice() ?>
+	<?php 
+foreach ($this->summary_basket->get_service('delivery') as $service) {
+    ?>
+		<?php 
+    if ($service->get_price()->get_value() > 0) {
+        $price_item = $service->get_price();
+        ?>
 			<tr class="body delivery">
-				<td class="label"><?= $enc->html($service->getName()) ?></td>
+				<td class="label"><?php 
+        echo $enc->html($service->get_name());
+        ?></td>
 				<td class="code"></td>
 				<td class="quantity">1</td>
-				<td class="price"><?= $enc->html(sprintf($pricefmt, $this->number($priceItem->getValue(), $priceItem->getPrecision()), $this->translate('currency', $priceItem->getCurrencyId()))) ?></td>
+				<td class="price"><?php 
+        echo $enc->html(sprintf($pricefmt, $this->number($price_item->get_value(), $price_item->get_precision()), $this->translate('currency', $price_item->get_currency_id())));
+        ?></td>
 			</tr>
-		<?php endif ?>
-	<?php endforeach ?>
+		<?php 
+    }
+    ?>
+	<?php 
+}
+?>
 
-	<?php foreach ($this->summaryBasket->getService('payment') as $service) : ?>
-		<?php if ($service->getPrice()->getValue() > 0) : $priceItem = $service->getPrice() ?>
+	<?php 
+foreach ($this->summary_basket->get_service('payment') as $service) {
+    ?>
+		<?php 
+    if ($service->get_price()->get_value() > 0) {
+        $price_item = $service->get_price();
+        ?>
 			<tr class="body payment">
-				<td class="label"><?= $enc->html($service->getName()) ?></td>
+				<td class="label"><?php 
+        echo $enc->html($service->get_name());
+        ?></td>
 				<td class="code"></td>
 				<td class="quantity">1</td>
-				<td class="price"><?= $enc->html(sprintf($pricefmt, $this->number($priceItem->getValue(), $priceItem->getPrecision()), $this->translate('currency', $priceItem->getCurrencyId()))) ?></td>
+				<td class="price"><?php 
+        echo $enc->html(sprintf($pricefmt, $this->number($price_item->get_value(), $price_item->get_precision()), $this->translate('currency', $price_item->get_currency_id())));
+        ?></td>
 			</tr>
-		<?php endif ?>
-	<?php endforeach ?>
+		<?php 
+    }
+    ?>
+	<?php 
+}
+?>
 
-	<?php if ($this->summaryBasket->getPrice()->getCosts() > 0 || $this->summaryBasket->getPrice()->getTaxFlag() === false) : ?>
+	<?php 
+if ($this->summary_basket->get_price()->get_costs() > 0 || $this->summary_basket->get_price()->get_tax_flag() === false) {
+    ?>
 		<tr class="footer subtotal">
-			<td class="label"><?= $enc->html($this->translate('controller/jobs', 'Sub-total')) ?></td>
+			<td class="label"><?php 
+    echo $enc->html($this->translate('controller/jobs', 'Sub-total'));
+    ?></td>
 			<td class="code"></td>
 			<td class="quantity"></td>
-			<td class="price"><?= $enc->html(sprintf($pricefmt, $this->number($this->summaryBasket->getPrice()->getValue(), $this->summaryBasket->getPrice()->getPrecision()), $this->translate('currency', $this->summaryBasket->getPrice()->getCurrencyId()))) ?></td>
+			<td class="price"><?php 
+    echo $enc->html(sprintf($pricefmt, $this->number($this->summary_basket->get_price()->get_value(), $this->summary_basket->get_price()->get_precision()), $this->translate('currency', $this->summary_basket->get_price()->get_currency_id())));
+    ?></td>
 		</tr>
-	<?php endif ?>
+	<?php 
+}
+?>
 
-	<?php if (($costs = $this->summaryBasket->getCosts()) > 0) : ?>
+	<?php 
+if (($costs = $this->summary_basket->get_costs()) > 0) {
+    ?>
 		<tr class="footer delivery">
-			<td class="label"><?= $enc->html($this->translate('controller/jobs', '+ Shipping')) ?></td>
+			<td class="label"><?php 
+    echo $enc->html($this->translate('controller/jobs', '+ Shipping'));
+    ?></td>
 			<td class="code"></td>
 			<td class="quantity"></td>
-			<td class="price"><?= $enc->html(sprintf($pricefmt, $this->number($costs, $this->summaryBasket->getPrice()->getPrecision()), $this->translate('currency', $this->summaryBasket->getPrice()->getCurrencyId()))) ?></td>
+			<td class="price"><?php 
+    echo $enc->html(sprintf($pricefmt, $this->number($costs, $this->summary_basket->get_price()->get_precision()), $this->translate('currency', $this->summary_basket->get_price()->get_currency_id())));
+    ?></td>
 		</tr>
-	<?php endif ?>
+	<?php 
+}
+?>
 
-	<?php if (($costs = $this->summaryBasket->getCosts('payment')) > 0) : ?>
+	<?php 
+if (($costs = $this->summary_basket->get_costs('payment')) > 0) {
+    ?>
 		<tr class="footer payment">
-			<td class="label"><?= $enc->html($this->translate('controller/jobs', '+ Payment costs')) ?></td>
+			<td class="label"><?php 
+    echo $enc->html($this->translate('controller/jobs', '+ Payment costs'));
+    ?></td>
 			<td class="code"></td>
 			<td class="quantity"></td>
-			<td class="price"><?= $enc->html(sprintf($pricefmt, $this->number($costs, $this->summaryBasket->getPrice()->getPrecision()), $this->translate('currency', $this->summaryBasket->getPrice()->getCurrencyId()))) ?></td>
+			<td class="price"><?php 
+    echo $enc->html(sprintf($pricefmt, $this->number($costs, $this->summary_basket->get_price()->get_precision()), $this->translate('currency', $this->summary_basket->get_price()->get_currency_id())));
+    ?></td>
 		</tr>
-	<?php endif ?>
+	<?php 
+}
+?>
 
-	<?php if ($this->summaryBasket->getPrice()->getTaxFlag() === true) : ?>
+	<?php 
+if ($this->summary_basket->get_price()->get_tax_flag() === true) {
+    ?>
 		<tr class="footer total">
-			<td class="label"><?= $enc->html($this->translate('controller/jobs', 'Total')) ?></td>
+			<td class="label"><?php 
+    echo $enc->html($this->translate('controller/jobs', 'Total'));
+    ?></td>
 			<td class="code"></td>
-			<td class="quantity"><?= $enc->html($totalQty) ?></td>
-			<td class="price"><?= $enc->html(sprintf($pricefmt, $this->number($this->summaryBasket->getPrice()->getValue() + $this->summaryBasket->getPrice()->getCosts(), $this->summaryBasket->getPrice()->getPrecision()), $this->translate('currency', $this->summaryBasket->getPrice()->getCurrencyId()))) ?></td>
+			<td class="quantity"><?php 
+    echo $enc->html($total_qty);
+    ?></td>
+			<td class="price"><?php 
+    echo $enc->html(sprintf($pricefmt, $this->number($this->summary_basket->get_price()->get_value() + $this->summary_basket->get_price()->get_costs(), $this->summary_basket->get_price()->get_precision()), $this->translate('currency', $this->summary_basket->get_price()->get_currency_id())));
+    ?></td>
 		</tr>
-	<?php endif ?>
+	<?php 
+}
+?>
 
-	<?php foreach ($this->summaryBasket->getTaxes() as $taxName => $map) : ?>
-		<?php foreach ($map as $taxRate => $priceItem) : ?>
-			<?php if (($taxValue = $priceItem->getTaxValue()) > 0) : ?>
+	<?php 
+foreach ($this->summary_basket->get_taxes() as $tax_name => $map) {
+    ?>
+		<?php 
+    foreach ($map as $tax_rate => $price_item) {
+        ?>
+			<?php 
+        if (($tax_value = $price_item->get_tax_value()) > 0) {
+            ?>
 				<tr class="footer tax">
-					<td class="label"><?= $enc->html(sprintf($priceItem->getTaxFlag() ? $this->translate('controller/jobs', 'Incl. %1$s%% %2$s') : $this->translate('controller/jobs', '+ %1$s%% %2$s'), $this->number($taxRate), $this->translate('controller/jobs', $taxName))) ?></td>
+					<td class="label"><?php 
+            echo $enc->html(sprintf($price_item->get_tax_flag() ? $this->translate('controller/jobs', 'Incl. %1$s%% %2$s') : $this->translate('controller/jobs', '+ %1$s%% %2$s'), $this->number($tax_rate), $this->translate('controller/jobs', $tax_name)));
+            ?></td>
 					<td class="code"></td>
 					<td class="quantity"></td>
-					<td class="price"><?= $enc->html(sprintf($pricefmt, $this->number($taxValue, $priceItem->getPrecision()), $this->translate('currency', $priceItem->getCurrencyId()))) ?></td>
+					<td class="price"><?php 
+            echo $enc->html(sprintf($pricefmt, $this->number($tax_value, $price_item->get_precision()), $this->translate('currency', $price_item->get_currency_id())));
+            ?></td>
 				</tr>
-			<?php endif ?>
-		<?php endforeach ?>
-	<?php endforeach ?>
+			<?php 
+        }
+        ?>
+		<?php 
+    }
+    ?>
+	<?php 
+}
+?>
 
-	<?php if ($this->summaryBasket->getPrice()->getTaxFlag() === false) : ?>
+	<?php 
+if ($this->summary_basket->get_price()->get_tax_flag() === false) {
+    ?>
 		<tr class="footer total">
-			<td class="label"><?= $enc->html($this->translate('controller/jobs', 'Total')) ?></td>
+			<td class="label"><?php 
+    echo $enc->html($this->translate('controller/jobs', 'Total'));
+    ?></td>
 			<td class="code"></td>
-			<td class="quantity"><?= $enc->html($totalQty) ?></td>
-			<td class="price"><?= $enc->html(sprintf($pricefmt, $this->number($this->summaryBasket->getPrice()->getValue() + $this->summaryBasket->getPrice()->getCosts() + $this->summaryBasket->getPrice()->getTaxValue(), $this->summaryBasket->getPrice()->getPrecision()), $this->translate('currency', $this->summaryBasket->getPrice()->getCurrencyId()))) ?></td>
+			<td class="quantity"><?php 
+    echo $enc->html($total_qty);
+    ?></td>
+			<td class="price"><?php 
+    echo $enc->html(sprintf($pricefmt, $this->number($this->summary_basket->get_price()->get_value() + $this->summary_basket->get_price()->get_costs() + $this->summary_basket->get_price()->get_tax_value(), $this->summary_basket->get_price()->get_precision()), $this->translate('currency', $this->summary_basket->get_price()->get_currency_id())));
+    ?></td>
 		</tr>
-	<?php endif ?>
+	<?php 
+}
+?>
 
-	<?php if ($this->summaryBasket->getPrice()->getRebate() > 0) : ?>
+	<?php 
+if ($this->summary_basket->get_price()->get_rebate() > 0) {
+    ?>
 		<tr class="footer rebate">
-			<td class="label"><?= $enc->html($this->translate('controller/jobs', 'Included rebates')) ?></td>
+			<td class="label"><?php 
+    echo $enc->html($this->translate('controller/jobs', 'Included rebates'));
+    ?></td>
 			<td class="code"></td>
 			<td class="quantity"></td>
-			<td class="price"><?= $enc->html(sprintf($pricefmt, $this->number($this->summaryBasket->getPrice()->getRebate(), $this->summaryBasket->getPrice()->getPrecision()), $this->translate('currency', $this->summaryBasket->getPrice()->getCurrencyId()))) ?></td>
+			<td class="price"><?php 
+    echo $enc->html(sprintf($pricefmt, $this->number($this->summary_basket->get_price()->get_rebate(), $this->summary_basket->get_price()->get_precision()), $this->translate('currency', $this->summary_basket->get_price()->get_currency_id())));
+    ?></td>
 		</tr>
-	<?php endif ?>
+	<?php 
+}
+?>
 </table>

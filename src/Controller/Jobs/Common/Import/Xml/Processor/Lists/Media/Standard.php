@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2019-2026
  * @package Controller
  * @subpackage Common
  */
-
 namespace Aimeos\Controller\Jobs\Common\Import\Xml\Processor\Lists\Media;
 
 /**
@@ -20,7 +18,6 @@ namespace Aimeos\Controller\Jobs\Common\Import\Xml\Processor\Lists\Media;
 class Standard extends \Aimeos\Controller\Jobs\Common\Import\Xml\Processor\Base implements \Aimeos\Controller\Jobs\Common\Import\Xml\Processor\Iface
 {
     use \Aimeos\Controller\Jobs\Common\Import\Xml\Traits;
-
     /** controller/jobs/common/import/xml/processor/lists/media/name
      * Name of the lists processor implementation
      *
@@ -30,7 +27,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Import\Xml\Processor\Base 
      * @param string Last part of the processor class name
      * @since 2019.04
      */
-
     /**
      * Updates the given item using the data from the DOM node
      *
@@ -38,60 +34,46 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Import\Xml\Processor\Base 
      * @param \DOMNode $node XML document node containing a list of nodes to process
      * @return \Aimeos\MShop\Common\Item\Iface Updated item
      */
-    public function process(\Aimeos\MShop\Common\Item\Iface $item, \DOMNode $node): \Aimeos\MShop\Common\Item\Iface
+    public function process(\Aimeos\M_Shop\Common\Item\Iface $item, \Dom_Node $node): \Aimeos\M_Shop\Common\Item\Iface
     {
-        \Aimeos\Utils::implements($item, \Aimeos\MShop\Common\Item\ListsRef\Iface::class);
-
-        $listItems = $item->getListItems('media', null, null, false)->reverse();
-        $resource = $item->getResourceType();
+        \Aimeos\Utils::implements($item, \Aimeos\M_Shop\Common\Item\Lists_Ref\Iface::class);
+        $list_items = $item->get_list_items('media', null, null, false)->reverse();
+        $resource = $item->get_resource_type();
         $context = $this->context();
-
-        $manager = \Aimeos\MShop::create($context, $resource);
-        $mediaManager = \Aimeos\MShop::create($context, 'media');
-
-        foreach ($node->childNodes as $refNode) {
-            if ($refNode->nodeName !== 'mediaitem') {
+        $manager = \Aimeos\M_Shop::create($context, $resource);
+        $media_manager = \Aimeos\M_Shop::create($context, 'media');
+        foreach ($node->child_nodes as $ref_node) {
+            if ($ref_node->node_name !== 'mediaitem') {
                 continue;
             }
-
-            if (($listItem = $listItems->pop()) === null) {
-                $listItem = $manager->createListItem();
+            if (($list_item = $list_items->pop()) === null) {
+                $list_item = $manager->create_list_item();
             }
-
-            if (($refItem = $listItem->getRefItem()) === null) {
-                $refItem = $mediaManager->create();
+            if (($ref_item = $list_item->get_ref_item()) === null) {
+                $ref_item = $media_manager->create();
             }
-
             $list = [];
-
-            foreach ($refNode->childNodes as $tag) {
-                if (in_array($tag->nodeName, ['lists', 'property'])) {
-                    $refItem = $this->getProcessor($tag->nodeName)->process($refItem, $tag);
+            foreach ($ref_node->child_nodes as $tag) {
+                if (in_array($tag->node_name, ['lists', 'property'])) {
+                    $ref_item = $this->get_processor($tag->node_name)->process($ref_item, $tag);
                 } else {
-                    $list[$tag->nodeName] = \Aimeos\Base\Str::decode($tag->nodeValue);
+                    $list[$tag->node_name] = \Aimeos\Base\Str::decode($tag->node_value);
                 }
             }
-
-            $refItem = $this->update($refItem, $list);
-
-            foreach ($refNode->attributes as $attrName => $attrNode) {
-                $list[$resource . '.' . $attrName] = \Aimeos\Base\Str::decode($attrNode->nodeValue);
+            $ref_item = $this->update($ref_item, $list);
+            foreach ($ref_node->attributes as $attr_name => $attr_node) {
+                $list[$resource . '.' . $attr_name] = \Aimeos\Base\Str::decode($attr_node->node_value);
             }
-
             $name = $resource . '.lists.config';
-            $list[$name] = (isset($list[$name]) ? (array) json_decode($list[$name]) : []);
+            $list[$name] = isset($list[$name]) ? (array) json_decode($list[$name]) : [];
             $name = $resource . '.lists.type';
             $list[$name] ??= 'default';
-
-            $this->addType($resource . '/lists/type', 'media', $list[$resource . '.lists.type']);
-
-            $listItem = $listItem->fromArray($list);
-            $item->addListItem('media', $listItem, $refItem);
+            $this->add_type($resource . '/lists/type', 'media', $list[$resource . '.lists.type']);
+            $list_item = $list_item->from_array($list);
+            $item->add_list_item('media', $list_item, $ref_item);
         }
-
-        return $item->deleteListItems($listItems->toArray());
+        return $item->delete_list_items($list_items->to_array());
     }
-
     /**
      * Updates the media item with the given key/value pairs
      *
@@ -99,27 +81,24 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Import\Xml\Processor\Base 
      * @param array &$list Associative list of key/value pairs, matching pairs are removed
      * @return \Aimeos\MShop\Media\Item\Iface Updated media item
      */
-    protected function update(\Aimeos\MShop\Media\Item\Iface $refItem, array &$list)
+    protected function update(\Aimeos\M_Shop\Media\Item\Iface $ref_item, array &$list)
     {
         $url = $list['media.url'] ?? '';
-
         try {
             if (isset($list['media.previews']) && ($map = json_decode($list['media.previews'], true)) !== null) {
-                $refItem->setPreviews($map)->setUrl($url);
+                $ref_item->set_previews($map)->set_url($url);
             } elseif (isset($list['media.preview'])) {
-                $refItem->setPreview($list['media.preview'])->setUrl($url);
-            } elseif ($refItem->getUrl() !== $url) {
-                $refItem = \Aimeos\MShop::create($this->context(), 'media')->scale($refItem->setUrl($url), true);
+                $ref_item->set_preview($list['media.preview'])->set_url($url);
+            } elseif ($ref_item->get_url() !== $url) {
+                $ref_item = \Aimeos\M_Shop::create($this->context(), 'media')->scale($ref_item->set_url($url), true);
             } else {
-                $refItem = \Aimeos\MShop::create($this->context(), 'media')->scale($refItem->setUrl($url));
+                $ref_item = \Aimeos\M_Shop::create($this->context(), 'media')->scale($ref_item->set_url($url));
             }
-
             unset($list['media.previews'], $list['media.preview']);
         } catch (\Aimeos\Controller\Jobs\Exception $e) {
-            $msg = sprintf('Scaling image "%1$s" failed: %2$s', $url, $e->getMessage());
+            $msg = sprintf('Scaling image "%1$s" failed: %2$s', $url, $e->get_message());
             $this->context()->logger()->error($msg, 'import/xml/product');
         }
-
-        return $refItem->fromArray($list);
+        return $ref_item->from_array($list);
     }
 }

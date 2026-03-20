@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2018-2026
  * @package Controller
  * @subpackage Jobs
  */
-
 namespace Aimeos\Controller\Jobs\Subscription\Process\Renew;
 
 /**
@@ -51,7 +49,6 @@ class Standard extends \Aimeos\Controller\Jobs\Subscription\Process\Base impleme
      * @param string Last part of the class name
      * @since 2018.04
      */
-
     /** controller/jobs/subscription/process/renew/decorators/excludes
      * Excludes decorators added by the "common" option from the subscription process CSV job controller
      *
@@ -76,7 +73,6 @@ class Standard extends \Aimeos\Controller\Jobs\Subscription\Process\Base impleme
      * @see controller/jobs/subscription/process/renew/decorators/global
      * @see controller/jobs/subscription/process/renew/decorators/local
      */
-
     /** controller/jobs/subscription/process/renew/decorators/global
      * Adds a list of globally available decorators only to the subscription process CSV job controller
      *
@@ -99,7 +95,6 @@ class Standard extends \Aimeos\Controller\Jobs\Subscription\Process\Base impleme
      * @see controller/jobs/subscription/process/renew/decorators/excludes
      * @see controller/jobs/subscription/process/renew/decorators/local
      */
-
     /** controller/jobs/subscription/process/renew/decorators/local
      * Adds a list of local decorators only to the subscription process CSV job controller
      *
@@ -124,27 +119,24 @@ class Standard extends \Aimeos\Controller\Jobs\Subscription\Process\Base impleme
      * @see controller/jobs/subscription/process/renew/decorators/excludes
      * @see controller/jobs/subscription/process/renew/decorators/global
      */
-
     /**
      * Returns the localized name of the job.
      *
      * @return string Name of the job
      */
-    public function getName(): string
+    public function get_name(): string
     {
         return $this->context()->translate('controller/jobs', 'Subscription process renew');
     }
-
     /**
      * Returns the localized description of the job.
      *
      * @return string Description of the job
      */
-    public function getDescription(): string
+    public function get_description(): string
     {
         return $this->context()->translate('controller/jobs', 'Renews subscriptions at next date');
     }
-
     /**
      * Executes the job.
      *
@@ -155,35 +147,26 @@ class Standard extends \Aimeos\Controller\Jobs\Subscription\Process\Base impleme
         $date = date('Y-m-d H:i:s');
         $context = $this->context();
         $domains = $this->domains();
-
-        $processors = $this->getProcessors($this->names());
-        $manager = \Aimeos\MShop::create($context, 'subscription');
-
+        $processors = $this->get_processors($this->names());
+        $manager = \Aimeos\M_Shop::create($context, 'subscription');
         $search = $manager->filter(true)->add('subscription.datenext', '<=', $date)->slice(0, $this->max());
-        $search->add($search->or([
-            $search->compare('==', 'subscription.dateend', null),
-            $search->compare('>', 'subscription.dateend', $date),
-        ]));
+        $search->add($search->or([$search->compare('==', 'subscription.dateend', null), $search->compare('>', 'subscription.dateend', $date)]));
         $cursor = $manager->cursor($search);
-
         while ($items = $manager->iterate($cursor, $domains)) {
             foreach ($items as $item) {
                 $manager->begin();
-
                 try {
                     $manager->save($this->process($item, $processors));
                     $manager->commit();
                 } catch (\Exception $e) {
                     $manager->rollback();
-
                     $str = 'Unable to renew subscription with ID "%1$s": %2$s';
-                    $msg = sprintf($str, $item->getId(), $e->getMessage() . "\n" . $e->getTraceAsString());
+                    $msg = sprintf($str, $item->get_id(), $e->get_message() . "\n" . $e->get_trace_as_string());
                     $context->logger()->error($msg, 'subscription/process/renew');
                 }
             }
         }
     }
-
     /**
      * Adds the given addresses to the order
      *
@@ -192,37 +175,28 @@ class Standard extends \Aimeos\Controller\Jobs\Subscription\Process\Base impleme
      * @param \Aimeos\Map $addresses List of type as key and address object implementing \Aimeos\MShop\Order\Item\Address\Iface as value
      * @return \Aimeos\MShop\Order\Item\Iface Order with addresses added
      */
-    protected function addBasketAddresses(
-        \Aimeos\MShop\ContextIface $context,
-        \Aimeos\MShop\Order\Item\Iface $newOrder,
-        \Aimeos\Map $addresses
-    ): \Aimeos\MShop\Order\Item\Iface {
-        foreach ($addresses as $type => $orderAddresses) {
+    protected function add_basket_addresses(\Aimeos\M_Shop\Context_Iface $context, \Aimeos\M_Shop\Order\Item\Iface $new_order, \Aimeos\Map $addresses): \Aimeos\M_Shop\Order\Item\Iface
+    {
+        foreach ($addresses as $type => $order_addresses) {
             $idx = 0;
-
-            foreach ($orderAddresses as $orderAddress) {
-                $newOrder->addAddress((clone $orderAddress)->setId(null), $type, $idx);
+            foreach ($order_addresses as $order_address) {
+                $new_order->add_address((clone $order_address)->set_id(null), $type, $idx);
             }
         }
-
-        if (!$newOrder->getCustomerId()) {
-            return $newOrder;
+        if (!$new_order->get_customer_id()) {
+            return $new_order;
         }
-
         try {
-            $customer = \Aimeos\MShop::create($context, 'customer')->get($newOrder->getCustomerId());
-            $address = \Aimeos\MShop::create($context, 'order')->createAddress();
-
-            $type = \Aimeos\MShop\Order\Item\Address\Base::TYPE_PAYMENT;
-            $newOrder->addAddress($address->copyFrom($customer->getPaymentAddress()), $type, 0);
+            $customer = \Aimeos\M_Shop::create($context, 'customer')->get($new_order->get_customer_id());
+            $address = \Aimeos\M_Shop::create($context, 'order')->create_address();
+            $type = \Aimeos\M_Shop\Order\Item\Address\Base::TYPE_PAYMENT;
+            $new_order->add_address($address->copy_from($customer->get_payment_address()), $type, 0);
         } catch (\Exception) {
-            $msg = sprintf('Unable to add current address for customer with ID "%1$s"', $newOrder->getCustomerId());
+            $msg = sprintf('Unable to add current address for customer with ID "%1$s"', $new_order->get_customer_id());
             $context->logger()->info($msg, 'subscription/process/renew');
         }
-
-        return $newOrder;
+        return $new_order;
     }
-
     /**
      * Adds the given coupon codes to the order if enabled
      *
@@ -231,11 +205,8 @@ class Standard extends \Aimeos\Controller\Jobs\Subscription\Process\Base impleme
      * @param \Aimeos\Map $codes List of coupon codes that should be added to the given order
      * @return \Aimeos\MShop\Order\Item\Iface Basket, maybe with coupons added
      */
-    protected function addBasketCoupons(
-        \Aimeos\MShop\ContextIface $context,
-        \Aimeos\MShop\Order\Item\Iface $newOrder,
-        \Aimeos\Map $codes
-    ): \Aimeos\MShop\Order\Item\Iface {
+    protected function add_basket_coupons(\Aimeos\M_Shop\Context_Iface $context, \Aimeos\M_Shop\Order\Item\Iface $new_order, \Aimeos\Map $codes): \Aimeos\M_Shop\Order\Item\Iface
+    {
         /** controller/jobs/subscription/process/renew/use-coupons
          * Applies the coupons of the previous order also to the new one
          *
@@ -250,16 +221,14 @@ class Standard extends \Aimeos\Controller\Jobs\Subscription\Process\Base impleme
         if ($context->config()->get('controller/jobs/subscription/process/renew/use-coupons', false)) {
             foreach ($codes as $code) {
                 try {
-                    $newOrder->addCoupon($code);
-                } catch (\Aimeos\MShop\Plugin\Provider\Exception | \Aimeos\MShop\Coupon\Exception) {
-                    $newOrder->deleteCoupon($code);
+                    $new_order->add_coupon($code);
+                } catch (\Aimeos\M_Shop\Plugin\Provider\Exception|\Aimeos\M_Shop\Coupon\Exception) {
+                    $new_order->delete_coupon($code);
                 }
             }
         }
-
-        return $newOrder;
+        return $new_order;
     }
-
     /**
      * Adds the given products to the order
      *
@@ -269,24 +238,17 @@ class Standard extends \Aimeos\Controller\Jobs\Subscription\Process\Base impleme
      * @param string $orderProductId Unique ID of the ordered subscription product
      * @return \Aimeos\MShop\Order\Item\Iface Order with products added
      */
-    protected function addBasketProducts(
-        \Aimeos\MShop\ContextIface $context,
-        \Aimeos\MShop\Order\Item\Iface $newOrder,
-        \Aimeos\Map $orderProducts,
-        $orderProductId
-    ): \Aimeos\MShop\Order\Item\Iface {
-        foreach ($orderProducts as $orderProduct) {
-            if ($orderProduct->getId() == $orderProductId) {
-                $orderProduct = clone $orderProduct;
-                $orderProduct->getAttributeItems()->setId(null);
-
-                $newOrder->addProduct($orderProduct->setId(null));
+    protected function add_basket_products(\Aimeos\M_Shop\Context_Iface $context, \Aimeos\M_Shop\Order\Item\Iface $new_order, \Aimeos\Map $order_products, $order_product_id): \Aimeos\M_Shop\Order\Item\Iface
+    {
+        foreach ($order_products as $order_product) {
+            if ($order_product->get_id() == $order_product_id) {
+                $order_product = clone $order_product;
+                $order_product->get_attribute_items()->set_id(null);
+                $new_order->add_product($order_product->set_id(null));
             }
         }
-
-        return $newOrder;
+        return $new_order;
     }
-
     /**
      * Adds a matching delivery and payment service to the order
      *
@@ -295,81 +257,62 @@ class Standard extends \Aimeos\Controller\Jobs\Subscription\Process\Base impleme
      * @param \Aimeos\Map $services Associative list of type as key and list of service objects implementing \Aimeos\MShop\Order\Item\Service\Iface as values
      * @return \Aimeos\MShop\Order\Item\Iface Order with delivery and payment service added
      */
-    protected function addBasketServices(
-        \Aimeos\MShop\ContextIface $context,
-        \Aimeos\MShop\Order\Item\Iface $newOrder,
-        \Aimeos\Map $services
-    ): \Aimeos\MShop\Order\Item\Iface {
-        $type = \Aimeos\MShop\Order\Item\Service\Base::TYPE_PAYMENT;
-
+    protected function add_basket_services(\Aimeos\M_Shop\Context_Iface $context, \Aimeos\M_Shop\Order\Item\Iface $new_order, \Aimeos\Map $services): \Aimeos\M_Shop\Order\Item\Iface
+    {
+        $type = \Aimeos\M_Shop\Order\Item\Service\Base::TYPE_PAYMENT;
         if (isset($services[$type])) {
             $idx = 0;
-
-            foreach ($services[$type] as $orderService) {
-                $orderService = clone $orderService;
-                $orderService->getAttributeItems()->setId(null);
-
-                $newOrder->addService($orderService->setId(null), $type, $idx++);
+            foreach ($services[$type] as $order_service) {
+                $order_service = clone $order_service;
+                $order_service->get_attribute_items()->set_id(null);
+                $new_order->add_service($order_service->set_id(null), $type, $idx++);
             }
         }
-
         $idx = 0;
-        $type = \Aimeos\MShop\Order\Item\Service\Base::TYPE_DELIVERY;
-
-        $serviceManager = \Aimeos\MShop::create($context, 'service');
-        $orderManager = \Aimeos\MShop::create($context, 'order');
-
-        $search = $serviceManager->filter(true);
-        $search->setSortations([$search->sort('+', 'service.position')]);
-        $search->setConditions($search->compare('==', 'service.type', $type));
-
-        foreach ($serviceManager->search($search, ['media', 'price', 'text']) as $item) {
-            $provider = $serviceManager->getProvider($item, $item->getType());
-
-            if ($provider->isAvailable($newOrder) === true) {
-                $orderServiceItem = $orderManager->createService()->copyFrom($item);
-                return $newOrder->addService($orderServiceItem, $type, $idx++);
+        $type = \Aimeos\M_Shop\Order\Item\Service\Base::TYPE_DELIVERY;
+        $service_manager = \Aimeos\M_Shop::create($context, 'service');
+        $order_manager = \Aimeos\M_Shop::create($context, 'order');
+        $search = $service_manager->filter(true);
+        $search->set_sortations([$search->sort('+', 'service.position')]);
+        $search->set_conditions($search->compare('==', 'service.type', $type));
+        foreach ($service_manager->search($search, ['media', 'price', 'text']) as $item) {
+            $provider = $service_manager->get_provider($item, $item->get_type());
+            if ($provider->is_available($new_order) === true) {
+                $order_service_item = $order_manager->create_service()->copy_from($item);
+                return $new_order->add_service($order_service_item, $type, $idx++);
             }
         }
-
-        return $newOrder;
+        return $new_order;
     }
-
     /**
      * Creates a new context based on the order and the customer the subscription belongs to
      *
      * @param \Aimeos\MShop\Subscription\Item\Iface $order Subscription item with associated order
      * @return \Aimeos\MShop\ContextIface New context object
      */
-    protected function createContext(\Aimeos\MShop\Subscription\Item\Iface $subscription): \Aimeos\MShop\ContextIface
+    protected function create_context(\Aimeos\M_Shop\Subscription\Item\Iface $subscription): \Aimeos\M_Shop\Context_Iface
     {
         $context = clone $this->context();
-        $level = \Aimeos\MShop\Locale\Manager\Base::SITE_ALL;
-
-        $order = $subscription->getOrderItem();
-        $sitecode = $order->getSiteCode();
+        $level = \Aimeos\M_Shop\Locale\Manager\Base::SITE_ALL;
+        $order = $subscription->get_order_item();
+        $sitecode = $order->get_site_code();
         $locale = $order->locale();
-
-        $manager = \Aimeos\MShop::create($context, 'locale');
-        $locale = $manager->bootstrap($sitecode, $locale->getLanguageId(), $locale->getCurrencyId(), false, $level);
-
-        $context->setLocale($locale);
-
+        $manager = \Aimeos\M_Shop::create($context, 'locale');
+        $locale = $manager->bootstrap($sitecode, $locale->get_language_id(), $locale->get_currency_id(), false, $level);
+        $context->set_locale($locale);
         try {
-            $manager = \Aimeos\MShop::create($context, 'customer');
-            $customerItem = $manager->get($order->getCustomerId(), ['group']);
-            $context->setUser($customerItem);
-
-            $manager = \Aimeos\MShop::create($context, 'group');
-            $filter = $manager->filter(true)->add(['group.id' => $customerItem->getGroups()]);
-            $groupItems = $manager->search($filter->slice(0, count($customerItem->getGroups())))->all();
-            $context->setGroups($groupItems);
+            $manager = \Aimeos\M_Shop::create($context, 'customer');
+            $customer_item = $manager->get($order->get_customer_id(), ['group']);
+            $context->set_user($customer_item);
+            $manager = \Aimeos\M_Shop::create($context, 'group');
+            $filter = $manager->filter(true)->add(['group.id' => $customer_item->get_groups()]);
+            $group_items = $manager->search($filter->slice(0, count($customer_item->get_groups())))->all();
+            $context->set_groups($group_items);
         } catch (\Exception) {
-        } // Subscription without account
-
+        }
+        // Subscription without account
         return $context;
     }
-
     /**
      * Creates and stores a new order from the given subscription
      *
@@ -377,23 +320,17 @@ class Standard extends \Aimeos\Controller\Jobs\Subscription\Process\Base impleme
      * @param \Aimeos\MShop\Subscription\Item\Iface $subscription Subscription item with associated order
      * @return \Aimeos\MShop\Order\Item\Iface New order item including addresses, coupons, products and services
      */
-    protected function createOrder(
-        \Aimeos\MShop\ContextIface $context,
-        \Aimeos\MShop\Subscription\Item\Iface $subscription
-    ): \Aimeos\MShop\Order\Item\Iface {
-        $order = $subscription->getOrderItem();
-
-        $manager = \Aimeos\MShop::create($context, 'order');
-        $newOrder = $manager->create()->setCustomerId($order->getCustomerId())->setChannel('subscription');
-
-        $newOrder = $this->addBasketAddresses($context, $newOrder, $order->getAddresses());
-        $newOrder = $this->addBasketProducts($context, $newOrder, $order->getProducts(), $subscription->getOrderProductId());
-        $newOrder = $this->addBasketServices($context, $newOrder, $order->getServices());
-        $newOrder = $this->addBasketCoupons($context, $newOrder, $order->getCoupons()->keys());
-
-        return $newOrder->check();
+    protected function create_order(\Aimeos\M_Shop\Context_Iface $context, \Aimeos\M_Shop\Subscription\Item\Iface $subscription): \Aimeos\M_Shop\Order\Item\Iface
+    {
+        $order = $subscription->get_order_item();
+        $manager = \Aimeos\M_Shop::create($context, 'order');
+        $new_order = $manager->create()->set_customer_id($order->get_customer_id())->set_channel('subscription');
+        $new_order = $this->add_basket_addresses($context, $new_order, $order->get_addresses());
+        $new_order = $this->add_basket_products($context, $new_order, $order->get_products(), $subscription->get_order_product_id());
+        $new_order = $this->add_basket_services($context, $new_order, $order->get_services());
+        $new_order = $this->add_basket_coupons($context, $new_order, $order->get_coupons()->keys());
+        return $new_order->check();
     }
-
     /**
      * Creates a new payment for the given order and invoice
      *
@@ -401,17 +338,14 @@ class Standard extends \Aimeos\Controller\Jobs\Subscription\Process\Base impleme
      * @param \Aimeos\MShop\Order\Item\Iface $order Complete order with product, addresses and services
      * @return \Aimeos\MShop\Order\Item\Iface Updated order item
      */
-    protected function createPayment(\Aimeos\MShop\ContextIface $context, \Aimeos\MShop\Order\Item\Iface $order): \Aimeos\MShop\Order\Item\Iface
+    protected function create_payment(\Aimeos\M_Shop\Context_Iface $context, \Aimeos\M_Shop\Order\Item\Iface $order): \Aimeos\M_Shop\Order\Item\Iface
     {
-        $manager = \Aimeos\MShop::create($context, 'service');
-
-        foreach ($order->getService(\Aimeos\MShop\Order\Item\Service\Base::TYPE_PAYMENT) as $service) {
-            $manager->getProvider($manager->get($service->getServiceId()), 'payment')->repay($order);
+        $manager = \Aimeos\M_Shop::create($context, 'service');
+        foreach ($order->get_service(\Aimeos\M_Shop\Order\Item\Service\Base::TYPE_PAYMENT) as $service) {
+            $manager->get_provider($manager->get($service->get_service_id()), 'payment')->repay($order);
         }
-
         return $order;
     }
-
     /**
      * Returns the domains that should be fetched together with the order data
      *
@@ -441,7 +375,6 @@ class Standard extends \Aimeos\Controller\Jobs\Subscription\Process\Base impleme
         $domains = ['order', 'order/address', 'order/coupon', 'order/product', 'order/service'];
         return $this->context()->config()->get('controller/jobs/subscription/process/domains', $domains);
     }
-
     /**
      * Returns if subscriptions should end if payment couldn't be captured
      *
@@ -465,7 +398,6 @@ class Standard extends \Aimeos\Controller\Jobs\Subscription\Process\Base impleme
          */
         return (bool) $this->context()->config()->get('controller/jobs/subscription/process/payment-ends', true);
     }
-
     /**
      * Returns the maximum number of orders processed at once
      *
@@ -489,7 +421,6 @@ class Standard extends \Aimeos\Controller\Jobs\Subscription\Process\Base impleme
          */
         return $this->context()->config()->get('controller/jobs/subscription/process/batch-max', 100);
     }
-
     /**
      * Returns the names of the subscription processors
      *
@@ -513,7 +444,6 @@ class Standard extends \Aimeos\Controller\Jobs\Subscription\Process\Base impleme
          */
         return (array) $this->context()->config()->get('controller/jobs/subscription/process/processors', []);
     }
-
     /**
      * Runs the subscription processors for the passed item
      *
@@ -521,45 +451,36 @@ class Standard extends \Aimeos\Controller\Jobs\Subscription\Process\Base impleme
      * @param iterable $processors List of processor objects to run on the item
      * @return \Aimeos\MShop\Subscription\Item\Iface Updated subscription item
      */
-    protected function process(
-        \Aimeos\MShop\Subscription\Item\Iface $item,
-        iterable $processors
-    ): \Aimeos\MShop\Subscription\Item\Iface {
+    protected function process(\Aimeos\M_Shop\Subscription\Item\Iface $item, iterable $processors): \Aimeos\M_Shop\Subscription\Item\Iface
+    {
         $context = $this->context();
-        $orderManager = \Aimeos\MShop::create($context, 'order');
-
-        $context = $this->createContext($item);
-        $newOrder = $this->createOrder($context, $item);
-
+        $order_manager = \Aimeos\M_Shop::create($context, 'order');
+        $context = $this->create_context($item);
+        $new_order = $this->create_order($context, $item);
         foreach ($processors as $processor) {
-            $processor->renewBefore($item, $newOrder);
+            $processor->renew_before($item, $new_order);
         }
-
-        $newOrder = $orderManager->save($newOrder->check());
-
+        $new_order = $order_manager->save($new_order->check());
         try {
-            $newOrder = $orderManager->save($this->createPayment($context, $newOrder));
-
-            $interval = new \DateInterval($item->getInterval());
-            $date = date_create((string) $item->getDateNext())->add($interval)->format('Y-m-d H:i:s');
-
-            $item->setDateNext($date)->setPeriod($item->getPeriod() + 1)->setReason(null);
+            $new_order = $order_manager->save($this->create_payment($context, $new_order));
+            $interval = new \DateInterval($item->get_interval());
+            $date = date_create((string) $item->get_date_next())->add($interval)->format('Y-m-d H:i:s');
+            $item->set_date_next($date)->set_period($item->get_period() + 1)->set_reason(null);
         } catch (\Exception $e) {
-            if ($e->getCode() < 1) { // not a soft error
-                $item->setReason(\Aimeos\MShop\Subscription\Item\Iface::REASON_PAYMENT);
-
+            if ($e->get_code() < 1) {
+                // not a soft error
+                $item->set_reason(\Aimeos\M_Shop\Subscription\Item\Iface::REASON_PAYMENT);
                 if ($this->ends()) {
-                    $item->setDateEnd(date_create()->format('Y-m-d H:i:s'));
+                    $item->set_date_end(date_create()->format('Y-m-d H:i:s'));
                 }
             }
-
             throw $e;
-        } finally { // will be always executed, even if exception is rethrown in catch()
+        } finally {
+            // will be always executed, even if exception is rethrown in catch()
             foreach ($processors as $processor) {
-                $processor->renewAfter($item, $newOrder);
+                $processor->renew_after($item, $new_order);
             }
         }
-
         return $item;
     }
 }

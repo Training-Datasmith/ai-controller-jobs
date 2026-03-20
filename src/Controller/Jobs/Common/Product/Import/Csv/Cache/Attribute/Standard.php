@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2015-2026
  * @package Controller
  * @subpackage Common
  */
-
 namespace Aimeos\Controller\Jobs\Common\Product\Import\Csv\Cache\Attribute;
 
 /**
@@ -28,26 +26,21 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Cache\B
      * @param string Last part of the cache class name
      * @since 2015.10
      */
-
     private array $attributes = [];
-
     /**
      * Initializes the object
      *
      * @param \Aimeos\MShop\ContextIface $context Context object
      */
-    public function __construct(\Aimeos\MShop\ContextIface $context)
+    public function __construct(\Aimeos\M_Shop\Context_Iface $context)
     {
         parent::__construct($context);
-
-        $manager = \Aimeos\MShop::create($context, 'attribute');
+        $manager = \Aimeos\M_Shop::create($context, 'attribute');
         $result = $manager->search($manager->filter());
-
         foreach ($result as $item) {
-            $this->attributes[$item->getCode()][$item->getType()] = $item;
+            $this->attributes[$item->get_code()][$item->get_type()] = $item;
         }
     }
-
     /**
      * Returns the attribute item for the given code and type
      *
@@ -60,24 +53,20 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Cache\B
         if (isset($this->attributes[$code][$type])) {
             return $this->attributes[$code][$type];
         }
-
-        $manager = \Aimeos\MShop::create($this->context(), 'attribute');
+        $manager = \Aimeos\M_Shop::create($this->context(), 'attribute');
         $search = $manager->filter()->add(['attribute.code' => $code, 'attribute.type' => $type]);
-
         if ($item = $manager->search($search)->first()) {
             $this->attributes[$code][$type] = $item;
         }
-
         return $item;
     }
-
     /**
      * Adds the attribute item to the cache
      *
      * @param \Aimeos\MShop\Common\Item\Iface $item Attribute object
      */
-    public function set(\Aimeos\MShop\Common\Item\Iface $item): void
+    public function set(\Aimeos\M_Shop\Common\Item\Iface $item): void
     {
-        $this->attributes[$item->getCode()][$item->getType()] = $item;
+        $this->attributes[$item->get_code()][$item->get_type()] = $item;
     }
 }

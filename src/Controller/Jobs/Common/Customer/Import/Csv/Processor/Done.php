@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2015-2026
  * @package Controller
  * @subpackage Common
  */
-
 namespace Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Processor;
 
 /**
@@ -26,20 +24,15 @@ class Done implements \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Process
      * @param array $mapping Associative list of field position in CSV as key and domain item key as value
      * @param \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Processor\Iface $processor Decorated processor
      */
-    public function __construct(
-        \Aimeos\MShop\ContextIface $context,
-        array $mapping,
-        ?\Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Processor\Iface $processor = null
-    ) {
+    public function __construct(\Aimeos\M_Shop\Context_Iface $context, array $mapping, ?\Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Processor\Iface $processor = null)
+    {
     }
-
     /**
      * Stores all types for which no type items exist yet
      */
     public function finish()
     {
     }
-
     /**
      * Saves the customer related data to the storage
      *
@@ -47,7 +40,7 @@ class Done implements \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Process
      * @param array $data List of CSV fields with position as key and data as value
      * @return array List of data which hasn't been imported
      */
-    public function process(\Aimeos\MShop\Customer\Item\Iface $item, array $data): array
+    public function process(\Aimeos\M_Shop\Customer\Item\Iface $item, array $data): array
     {
         return $data;
     }

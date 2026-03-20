@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2018-2026
  * @package Controller
  * @subpackage Common
  */
-
 namespace Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Cache;
 
 /**
@@ -24,8 +22,7 @@ interface Iface
      *
      * @param \Aimeos\MShop\ContextIface $context Context object
      */
-    public function __construct(\Aimeos\MShop\ContextIface $context);
-
+    public function __construct(\Aimeos\M_Shop\Context_Iface $context);
     /**
      * Returns the item or ID for the given code
      *
@@ -34,11 +31,10 @@ interface Iface
      * @return \Aimeos\MShop\Common\Item\Iface|string|null Item object, unique ID or null if not found
      */
     public function get(string $code, ?string $type = null);
-
     /**
      * Adds the item or ID to the cache
      *
      * @param \Aimeos\MShop\Common\Item\Iface $item Item object
      */
-    public function set(\Aimeos\MShop\Common\Item\Iface $item): \Aimeos\MShop\Common\Item\Iface;
+    public function set(\Aimeos\M_Shop\Common\Item\Iface $item): \Aimeos\M_Shop\Common\Item\Iface;
 }

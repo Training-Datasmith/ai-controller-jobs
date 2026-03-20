@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2019-2026
  * @package Controller
  * @subpackage Jobs
  */
-
 namespace Aimeos\Controller\Jobs\Catalog\Import\Xml;
 
 /**
@@ -51,7 +49,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param string Last part of the class name
      * @since 2019.04
      */
-
     /** controller/jobs/catalog/import/xml/decorators/excludes
      * Excludes decorators added by the "common" option from the catalog import CSV job controller
      *
@@ -76,7 +73,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/catalog/import/xml/decorators/global
      * @see controller/jobs/catalog/import/xml/decorators/local
      */
-
     /** controller/jobs/catalog/import/xml/decorators/global
      * Adds a list of globally available decorators only to the catalog import CSV job controller
      *
@@ -99,7 +95,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/catalog/import/xml/decorators/excludes
      * @see controller/jobs/catalog/import/xml/decorators/local
      */
-
     /** controller/jobs/catalog/import/xml/decorators/local
      * Adds a list of local decorators only to the catalog import CSV job controller
      *
@@ -124,30 +119,26 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/catalog/import/xml/decorators/excludes
      * @see controller/jobs/catalog/import/xml/decorators/global
      */
-
     use \Aimeos\Controller\Jobs\Common\Types;
     use \Aimeos\Controller\Jobs\Common\Import\Xml\Traits;
-
     /**
      * Returns the localized name of the job.
      *
      * @return string Name of the job
      */
-    public function getName(): string
+    public function get_name(): string
     {
         return $this->context()->translate('controller/jobs', 'Catalog import XML');
     }
-
     /**
      * Returns the localized description of the job.
      *
      * @return string Description of the job
      */
-    public function getDescription(): string
+    public function get_description(): string
     {
         return $this->context()->translate('controller/jobs', 'Imports new and updates existing categories from XML files');
     }
-
     /**
      * Executes the job.
      *
@@ -157,38 +148,31 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
     {
         $context = $this->context();
         $logger = $context->logger();
-
         try {
             $fs = $context->fs('fs-import');
-            $site = $context->locale()->getSiteItem()->getCode();
+            $site = $context->locale()->get_site_item()->get_code();
             $location = $this->location() . '/' . $site;
-
-            if ($fs->isDir($location) === false) {
+            if ($fs->is_dir($location) === false) {
                 return;
             }
-
             $logger->info(sprintf('Started catalog import from "%1$s"', $location), 'import/xml/catalog');
-
             foreach (map($fs->scan($location))->sort() as $filename) {
                 $path = $location . '/' . $filename;
                 if ($filename[0] === '.') {
                     continue;
                 }
-                if ($fs instanceof \Aimeos\Base\Filesystem\DirIface && $fs->isDir($path)) {
+                if ($fs instanceof \Aimeos\Base\Filesystem\Dir_Iface && $fs->is_dir($path)) {
                     continue;
                 }
-
                 $this->import($path);
             }
-
             $logger->info(sprintf('Finished catalog import from "%1$s"', $location), 'import/xml/catalog');
         } catch (\Exception $e) {
-            $logger->error('Catalog import error: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), 'import/xml/catalog');
-            $this->mail('Catalog XML import error', $e->getMessage());
+            $logger->error('Catalog import error: ' . $e->get_message() . "\n" . $e->get_trace_as_string(), 'import/xml/catalog');
+            $this->mail('Catalog XML import error', $e->get_message());
             throw $e;
         }
     }
-
     /**
      * Returns the directory for storing imported files
      *
@@ -223,7 +207,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
         $backup = $this->context()->config()->get('controller/jobs/catalog/import/xml/backup');
         return \Aimeos\Base\Str::strtime((string) $backup);
     }
-
     /**
      * Returns the list of domain names that should be retrieved along with the catalog items
      *
@@ -248,7 +231,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          */
         return $this->context()->config()->get('controller/jobs/catalog/import/xml/domains', ['media', 'text']);
     }
-
     /**
      * Imports the XML file given by its path
      *
@@ -256,37 +238,28 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      */
     protected function import(string $path)
     {
-        $xml = new \XMLReader();
+        $xml = new \Xml_Reader();
         $context = $this->context();
         $logger = $context->logger();
-
         $fs = $context->fs('fs-import');
         $tmpfile = $fs->readf($path);
-
         if ($xml->open($tmpfile, null, LIBXML_COMPACT | LIBXML_PARSEHUGE) === false) {
             throw new \Aimeos\Controller\Jobs\Exception(sprintf('No XML file "%1$s" found', $tmpfile));
         }
-
         $logger->info(sprintf('Started catalog import from file "%1$s"', $path), 'import/xml/catalog');
-
-        $this->importTree($xml, $this->domains());
-        $this->saveTypes();
-
-        foreach ($this->getProcessors() as $proc) {
+        $this->import_tree($xml, $this->domains());
+        $this->save_types();
+        foreach ($this->get_processors() as $proc) {
             $proc->finish();
         }
-
         unlink($tmpfile);
-
         if (!empty($backup = $this->backup())) {
             $fs->move($path, $backup);
         } else {
             $fs->rm($path);
         }
-
         $logger->info(sprintf('Finished catalog import from file "%1$s"', $path), 'import/xml/catalog');
     }
-
     /**
      * Imports a single category node
      *
@@ -296,34 +269,28 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param array &$map Will contain the associative list of code/ID pairs of the child categories
      * @return string Catalog ID of the imported category
      */
-    protected function importNode(\DomElement $node, array $domains, ?string $parentid, array &$map): string
+    protected function import_node(\Dom_Element $node, array $domains, ?string $parentid, array &$map): string
     {
-        $manager = \Aimeos\MShop::create($this->context(), 'catalog');
-
-        if (($attr = $node->attributes->getNamedItem('ref')) !== null) {
+        $manager = \Aimeos\M_Shop::create($this->context(), 'catalog');
+        if (($attr = $node->attributes->get_named_item('ref')) !== null) {
             try {
-                $item = $manager->find($attr->nodeValue, $domains);
-                $manager->move($item->getId(), $item->getParentId(), $parentid);
-
+                $item = $manager->find($attr->node_value, $domains);
+                $manager->move($item->get_id(), $item->get_parent_id(), $parentid);
                 $item = $this->process($item, $node);
-                $currentid = $manager->save($item)->getId();
+                $currentid = $manager->save($item)->get_id();
                 unset($item);
-
-                $tree = $manager->getTree($currentid, [], \Aimeos\MW\Tree\Manager\Base::LEVEL_LIST);
-
-                foreach ($tree->getChildren() as $child) {
-                    $map[$child->getCode()] = $child->getId();
+                $tree = $manager->get_tree($currentid, [], \Aimeos\MW\Tree\Manager\Base::LEVEL_LIST);
+                foreach ($tree->get_children() as $child) {
+                    $map[$child->get_code()] = $child->get_id();
                 }
-
                 return $currentid;
-            } catch (\Aimeos\MShop\Exception) {
-            } // not found, create new
+            } catch (\Aimeos\M_Shop\Exception) {
+            }
+            // not found, create new
         }
-
         $item = $this->process($manager->create(), $node);
-        return $manager->insert($item, $parentid)->getId();
+        return $manager->insert($item, $parentid)->get_id();
     }
-
     /**
      * Imports the catalog document
      *
@@ -332,35 +299,31 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param string|null $parentid ID of the parent catalog node
      * @param array $map Associative list of catalog code as keys and category ID as values
      */
-    protected function importTree(\XMLReader $xml, array $domains, ?string $parentid = null, array $map = [])
+    protected function import_tree(\Xml_Reader $xml, array $domains, ?string $parentid = null, array $map = [])
     {
         $total = 0;
-        $childMap = [];
+        $child_map = [];
         $currentid = $parentid;
-
         while ($xml->read() === true) {
-            if ($xml->nodeType === \XMLReader::ELEMENT && $xml->name === 'catalogitem') {
+            if ($xml->node_type === \Xml_Reader::ELEMENT && $xml->name === 'catalogitem') {
                 if (($node = $xml->expand()) === false) {
                     $msg = sprintf('Expanding "%1$s" node failed', 'catalogitem');
                     throw new \Aimeos\Controller\Jobs\Exception($msg);
                 }
-
-                if (($attr = $node->attributes->getNamedItem('ref')) !== null) {
-                    unset($map[$attr->nodeValue]);
+                if (($attr = $node->attributes->get_named_item('ref')) !== null) {
+                    unset($map[$attr->node_value]);
                 }
-
-                $currentid = $this->importNode($node, $domains, $parentid, $childMap);
+                $currentid = $this->import_node($node, $domains, $parentid, $child_map);
                 $total++;
-            } elseif ($xml->nodeType === \XMLReader::ELEMENT && $xml->name === 'catalog') {
-                $this->importTree($xml, $domains, $currentid, $childMap);
-                $childMap = [];
-            } elseif ($xml->nodeType === \XMLReader::END_ELEMENT && $xml->name === 'catalog') {
-                \Aimeos\MShop::create($this->context(), 'catalog')->delete($map);
+            } elseif ($xml->node_type === \Xml_Reader::ELEMENT && $xml->name === 'catalog') {
+                $this->import_tree($xml, $domains, $currentid, $child_map);
+                $child_map = [];
+            } elseif ($xml->node_type === \Xml_Reader::END_ELEMENT && $xml->name === 'catalog') {
+                \Aimeos\M_Shop::create($this->context(), 'catalog')->delete($map);
                 break;
             }
         }
     }
-
     /**
      * Returns the path to the directory with the XML file
      *
@@ -385,7 +348,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          */
         return (string) $this->context()->config()->get('controller/jobs/catalog/import/xml/location', 'catalog');
     }
-
     /**
      * Updates the catalog item and its referenced items using the given DOM node
      *
@@ -393,30 +355,26 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param \DomElement $node DOM node used for updateding the catalog item
      * @return \Aimeos\MShop\Catalog\Item\Iface $item Updated catalog item object
      */
-    protected function process(\Aimeos\MShop\Catalog\Item\Iface $item, \DomElement $node): \Aimeos\MShop\Catalog\Item\Iface
+    protected function process(\Aimeos\M_Shop\Catalog\Item\Iface $item, \Dom_Element $node): \Aimeos\M_Shop\Catalog\Item\Iface
     {
         try {
             $list = [];
-
             foreach ($node->attributes as $attr) {
-                $list[$attr->nodeName] = $attr->nodeValue;
+                $list[$attr->node_name] = $attr->node_value;
             }
-
-            foreach ($node->childNodes as $tag) {
-                if ($tag->nodeName === 'lists') {
-                    $item = $this->getProcessor($tag->nodeName)->process($item, $tag);
-                } elseif ($tag->nodeName[0] !== '#') {
-                    $list[$tag->nodeName] = $tag->nodeValue;
+            foreach ($node->child_nodes as $tag) {
+                if ($tag->node_name === 'lists') {
+                    $item = $this->get_processor($tag->node_name)->process($item, $tag);
+                } elseif ($tag->node_name[0] !== '#') {
+                    $list[$tag->node_name] = $tag->node_value;
                 }
             }
-
             $list['catalog.config'] = isset($list['catalog.config']) ? json_decode($list['catalog.config'], true) : [];
-            $item->fromArray($list, true);
+            $item->from_array($list, true);
         } catch (\Exception $e) {
-            $msg = 'Catalog import error: ' . $e->getMessage() . "\n" . $e->getTraceAsString();
+            $msg = 'Catalog import error: ' . $e->get_message() . "\n" . $e->get_trace_as_string();
             $this->context()->logger()->error($msg, 'import/xml/catalog');
         }
-
         return $item;
     }
 }

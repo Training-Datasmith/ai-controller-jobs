@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2019-2026
  * @package Controller
  * @subpackage Jobs
  */
-
 namespace Aimeos\Controller\Jobs\Stock\Import\Csv;
 
 /**
@@ -51,7 +49,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param string Last part of the class name
      * @since 2019.04
      */
-
     /** controller/jobs/stock/import/csv/decorators/excludes
      * Excludes decorators added by the "common" option from the stock import CSV job controller
      *
@@ -76,7 +73,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/stock/import/csv/decorators/global
      * @see controller/jobs/stock/import/csv/decorators/local
      */
-
     /** controller/jobs/stock/import/csv/decorators/global
      * Adds a list of globally available decorators only to the stock import CSV job controller
      *
@@ -99,7 +95,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/stock/import/csv/decorators/excludes
      * @see controller/jobs/stock/import/csv/decorators/local
      */
-
     /** controller/jobs/stock/import/csv/decorators/local
      * Adds a list of local decorators only to the stock import CSV job controller
      *
@@ -124,29 +119,25 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/stock/import/csv/decorators/excludes
      * @see controller/jobs/stock/import/csv/decorators/global
      */
-
     use \Aimeos\Controller\Jobs\Common\Types;
-
     /**
      * Returns the localized name of the job.
      *
      * @return string Name of the job
      */
-    public function getName(): string
+    public function get_name(): string
     {
         return $this->context()->translate('controller/jobs', 'Stock import CSV');
     }
-
     /**
      * Returns the localized description of the job.
      *
      * @return string Description of the job
      */
-    public function getDescription(): string
+    public function get_description(): string
     {
         return $this->context()->translate('controller/jobs', 'Imports new and updates existing stocks from CSV files');
     }
-
     /**
      * Executes the job
      *
@@ -157,44 +148,35 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
         $context = $this->context();
         $logger = $context->logger();
         $process = $context->process();
-
         try {
             $fs = $context->fs('fs-import');
-            $site = $context->locale()->getSiteItem()->getCode();
+            $site = $context->locale()->get_site_item()->get_code();
             $location = $this->location() . '/' . $site;
-
-            if ($fs->isDir($location) === false) {
+            if ($fs->is_dir($location) === false) {
                 return;
             }
-
             $logger->info(sprintf('Started stock import from "%1$s"', $location), 'import/csv/stock');
-
-            $fcn = function (\Aimeos\MShop\ContextIface $context, string $path): void {
+            $fcn = function (\Aimeos\M_Shop\Context_Iface $context, string $path): void {
                 $this->import($context, $path);
             };
-
             foreach (map($fs->scan($location))->sort() as $filename) {
                 $path = $location . '/' . $filename;
                 if ($filename[0] === '.') {
                     continue;
                 }
-                if ($fs instanceof \Aimeos\Base\Filesystem\DirIface && $fs->isDir($path)) {
+                if ($fs instanceof \Aimeos\Base\Filesystem\Dir_Iface && $fs->is_dir($path)) {
                     continue;
                 }
-
                 $process->start($fcn, [$context, $path]);
             }
-
             $process->wait();
-
             $logger->info(sprintf('Finished stock import from "%1$s"', $location), 'import/csv/stock');
         } catch (\Exception $e) {
-            $logger->error('Stock import error: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), 'import/csv/stock');
-            $this->mail('Stock CSV import error', $e->getMessage());
+            $logger->error('Stock import error: ' . $e->get_message() . "\n" . $e->get_trace_as_string(), 'import/csv/stock');
+            $this->mail('Stock CSV import error', $e->get_message());
             throw $e;
         }
     }
-
     /**
      * Returns the directory for storing imported files
      *
@@ -229,43 +211,33 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
         $backup = $this->context()->config()->get('controller/jobs/stock/import/csv/backup');
         return \Aimeos\Base\Str::strtime((string) $backup);
     }
-
     /**
      * Imports the CSV file given by its path
      *
      * @param \Aimeos\MShop\ContextIface $context Context object
      * @param string $path Relative path to the CSV file in the file system
      */
-    protected function import(\Aimeos\MShop\ContextIface $context, string $path)
+    protected function import(\Aimeos\M_Shop\Context_Iface $context, string $path)
     {
         $context = $this->context();
         $logger = $context->logger();
-
         $skiplines = $this->skip();
         $fs = $context->fs('fs-import');
-
         $logger->info(sprintf('Started stock import from file "%1$s"', $path), 'import/csv/stock');
-
         $fh = $fs->reads($path);
-
         for ($i = 0; $i < $skiplines; $i++) {
             fgetcsv($fh, null, ',', '"', '');
         }
-
-        $this->importStocks($fh);
-
+        $this->import_stocks($fh);
         fclose($fh);
-        $this->saveTypes();
-
+        $this->save_types();
         if (!empty($backup = $this->backup())) {
             $fs->move($path, $backup);
         } else {
             $fs->rm($path);
         }
-
         $logger->info(sprintf('Finished stock import from file "%1$s"', $path), 'import/csv/stock');
     }
-
     /**
      * Returns the stock items for the given product IDs and stock types
      *
@@ -273,58 +245,47 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param array $types List of stock types
      * @return array Multi-dimensional array of code/type/item map
      */
-    protected function getStockItems(array $ids, array $types): array
+    protected function get_stock_items(array $ids, array $types): array
     {
-        $manager = \Aimeos\MShop::create($this->context(), 'stock');
+        $manager = \Aimeos\M_Shop::create($this->context(), 'stock');
         $search = $manager->filter()->add(['stock.productid' => $ids, 'stock.type' => $types])->slice(0, 10000);
-
         $map = [];
         foreach ($manager->search($search) as $item) {
-            $map[$item->getProductId()][$item->getType()] = $item;
+            $map[$item->get_product_id()][$item->get_type()] = $item;
         }
-
         return $map;
     }
-
     /**
      * Imports the CSV data and creates new stocks or updates existing ones
      *
      * @param resource $fhandle File handle for the CSV file to import
      * @return int Number of imported stocks
      */
-    protected function importStocks($fhandle): int
+    protected function import_stocks($fhandle): int
     {
         $total = 0;
-
         do {
             $count = 0;
             $max = $this->max();
             $codes = $data = $types = [];
-
             while (($row = fgetcsv($fhandle, null, ',', '"', '')) !== false && $count < $max) {
                 if ($row[0] === '') {
                     continue;
                 }
-
                 $type = $this->val($row, 2, 'default');
                 $types[$type] = null;
                 $codes[] = $row[0];
                 $row[2] = $type;
                 $data[] = $row;
-
                 $count++;
             }
-
             if (!empty($data)) {
                 $this->update($data, $codes, array_keys($types));
             }
-
             $total += $count;
         } while ($count > 0);
-
         return $total;
     }
-
     /**
      * Returns the path to the directory with the CSV file
      *
@@ -349,7 +310,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          */
         return (string) $this->context()->config()->get('controller/jobs/stock/import/csv/location', 'stock');
     }
-
     /**
      * Returns the maximum number of CSV rows to import at once
      *
@@ -375,7 +335,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          */
         return (int) $this->context()->config()->get('controller/jobs/stock/import/csv/max-size', 1000);
     }
-
     /**
      * Returns the number of rows skipped in front of each CSV files
      *
@@ -400,7 +359,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          */
         return (int) $this->context()->config()->get('controller/jobs/stock/import/csv/skip-lines', 0);
     }
-
     /**
      * Updates the stock items
      *
@@ -411,47 +369,32 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
     protected function update(array $data, array $codes, array $types)
     {
         $context = $this->context();
-        $manager = \Aimeos\MShop::create($context, 'stock');
-        $prodManager = \Aimeos\MShop::create($context, 'product');
-
-        $filter = $prodManager->filter()->add(['product.code' => $codes])->slice(0, count($codes));
-        $products = $prodManager->search($filter);
-        $prodMap = $products->col(null, 'product.code');
-
-        $map = $this->getStockItems($products->keys()->all(), $types);
+        $manager = \Aimeos\M_Shop::create($context, 'stock');
+        $prod_manager = \Aimeos\M_Shop::create($context, 'product');
+        $filter = $prod_manager->filter()->add(['product.code' => $codes])->slice(0, count($codes));
+        $products = $prod_manager->search($filter);
+        $prod_map = $products->col(null, 'product.code');
+        $map = $this->get_stock_items($products->keys()->all(), $types);
         $items = [];
-
-        $prodManager->begin();
-
+        $prod_manager->begin();
         foreach ($data as $entry) {
             $code = $entry[0];
             $type = $entry[2];
-
-            if (($product = $prodMap->get($code)) === null) {
+            if (($product = $prod_map->get($code)) === null) {
                 continue;
             }
-
-            $item = $map[$product->getId()][$type] ?? $manager->create();
-
-            $items[] = $item->setProductId($product->getId())->setType($type)
-                ->setStocklevel($this->val($entry, 1))
-                ->setDateBack($this->val($entry, 3))
-                ->setTimeframe($this->val($entry, 4, ''));
-
-            if ($item->getStockLevel() === null || $item->getStockLevel() > 0) {
-                $prodManager->stock($product->getId(), 1);
+            $item = $map[$product->get_id()][$type] ?? $manager->create();
+            $items[] = $item->set_product_id($product->get_id())->set_type($type)->set_stocklevel($this->val($entry, 1))->set_date_back($this->val($entry, 3))->set_timeframe($this->val($entry, 4, ''));
+            if ($item->get_stock_level() === null || $item->get_stock_level() > 0) {
+                $prod_manager->stock($product->get_id(), 1);
             }
-
-            $this->addType('stock/type', 'product', $type);
+            $this->add_type('stock/type', 'product', $type);
             unset($map[$code][$type]);
         }
-
         $manager->begin();
         $manager->save($items);
         $manager->commit();
-
-        $prodManager->commit();
-
+        $prod_manager->commit();
         unset($items);
     }
 }

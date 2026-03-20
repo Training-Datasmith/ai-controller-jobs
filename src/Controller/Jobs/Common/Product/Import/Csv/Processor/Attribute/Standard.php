@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2015-2026
  * @package Controller
  * @subpackage Common
  */
-
 namespace Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Attribute;
 
 /**
@@ -28,11 +26,9 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Process
      * @param string Last part of the processor class name
      * @since 2015.10
      */
-
     private \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Cache\Attribute\Standard $cache;
-    private ?array $listTypes = null;
+    private ?array $list_types = null;
     private array $types = [];
-
     /**
      * Initializes the object
      *
@@ -40,15 +36,10 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Process
      * @param array $mapping Associative list of field position in CSV as key and domain item key as value
      * @param \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Iface $object Decorated processor
      */
-    public function __construct(
-        \Aimeos\MShop\ContextIface $context,
-        array $mapping,
-        ?\Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Iface $object = null
-    ) {
+    public function __construct(\Aimeos\M_Shop\Context_Iface $context, array $mapping, ?\Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Iface $object = null)
+    {
         parent::__construct($context, $mapping, $object);
-
         $config = $context->config();
-
         /** controller/jobs/product/import/csv/attribute/listtypes
          * Names of the product list types for attributes that are updated or removed
          *
@@ -69,30 +60,24 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Process
          * @see controller/jobs/product/import/csv/text/listtypes
          */
         $default = $config->get('controller/jobs/product/import/csv/processor/attribute/listtypes');
-        $this->listTypes = $config->get('controller/jobs/product/import/csv/attribute/listtypes', $default);
-
-        if ($this->listTypes === null) {
-            $this->listTypes = [];
-            $manager = \Aimeos\MShop::create($context, 'product/lists/type');
+        $this->list_types = $config->get('controller/jobs/product/import/csv/attribute/listtypes', $default);
+        if ($this->list_types === null) {
+            $this->list_types = [];
+            $manager = \Aimeos\M_Shop::create($context, 'product/lists/type');
             $search = $manager->filter()->slice(0, 0x7fffffff);
-
             foreach ($manager->search($search) as $item) {
-                $this->listTypes[$item->getCode()] = $item->getCode();
+                $this->list_types[$item->get_code()] = $item->get_code();
             }
         } else {
-            $this->listTypes = array_combine($this->listTypes, $this->listTypes);
+            $this->list_types = array_combine($this->list_types, $this->list_types);
         }
-
-        $manager = \Aimeos\MShop::create($context, 'attribute/type');
+        $manager = \Aimeos\M_Shop::create($context, 'attribute/type');
         $search = $manager->filter()->slice(0, 0x7fffffff);
-
         foreach ($manager->search($search) as $item) {
-            $this->types[$item->getCode()] = $item->getCode();
+            $this->types[$item->get_code()] = $item->get_code();
         }
-
-        $this->cache = $this->getCache('attribute');
+        $this->cache = $this->get_cache('attribute');
     }
-
     /**
      * Saves the attribute related data to the storage
      *
@@ -100,11 +85,10 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Process
      * @param array $data List of CSV fields with position as key and data as value
      * @return array List of data which hasn't been imported
      */
-    public function process(\Aimeos\MShop\Product\Item\Iface $product, array $data): array
+    public function process(\Aimeos\M_Shop\Product\Item\Iface $product, array $data): array
     {
         $context = $this->context();
-        $manager = \Aimeos\MShop::create($context, 'product');
-
+        $manager = \Aimeos\M_Shop::create($context, 'product');
         /** controller/jobs/product/import/csv/separator
          * Separator between multiple values in one CSV field
          *
@@ -124,77 +108,60 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Process
          * @see controller/jobs/product/import/csv/text/listtypes
          */
         $separator = $context->config()->get('controller/jobs/product/import/csv/separator', "\n");
-
         $pos = 0;
-        $listMap = [];
-        $map = $this->getMappedChunk($data, $this->getMapping());
-        $listItems = $product->getListItems('attribute', $this->listTypes, null, false);
-
-        foreach ($listItems as $listItem) {
-            if ($refItem = $listItem->getRefItem()) {
-                $listMap[$refItem->getCode()][$refItem->getType()][$listItem->getType()] = $listItem;
+        $list_map = [];
+        $map = $this->get_mapped_chunk($data, $this->get_mapping());
+        $list_items = $product->get_list_items('attribute', $this->list_types, null, false);
+        foreach ($list_items as $list_item) {
+            if ($ref_item = $list_item->get_ref_item()) {
+                $list_map[$ref_item->get_code()][$ref_item->get_type()][$list_item->get_type()] = $list_item;
             }
         }
-
         foreach ($map as $list) {
-            if ($this->checkEntry($list) === false) {
+            if ($this->check_entry($list) === false) {
                 continue;
             }
-
-            $attrType = trim($this->val($list, 'attribute.type', ''));
+            $attr_type = trim($this->val($list, 'attribute.type', ''));
             $listtype = trim($this->val($list, 'product.lists.type', 'default'));
-            $this->addType('product/lists/type', 'attribute', $listtype);
-
-            $listConfig = $this->getListConfig(trim($this->val($list, 'product.lists.config', '')));
+            $this->add_type('product/lists/type', 'attribute', $listtype);
+            $list_config = $this->get_list_config(trim($this->val($list, 'product.lists.config', '')));
             unset($list['product.lists.config']);
-
             $codes = explode($separator, trim($this->val($list, 'attribute.code', '')));
             unset($list['attribute.code'], $list['product.lists.config']);
-
             foreach ($codes as $code) {
                 $code = trim($code);
-
-                $attrItem = $this->getAttributeItem($code, $attrType);
-                $attrItem = $attrItem->fromArray($list)->setCode($code);
-
-                $listItem = $listMap[$code][$attrType][$listtype] ?? $manager->createListItem();
-                $listItem = $listItem->setPosition($pos)->fromArray($list)->setConfig($listConfig);
-
-                $product->addListItem('attribute', $listItem->setType($listtype), $attrItem);
-                unset($listItems[$listItem->getId()]);
+                $attr_item = $this->get_attribute_item($code, $attr_type);
+                $attr_item = $attr_item->from_array($list)->set_code($code);
+                $list_item = $list_map[$code][$attr_type][$listtype] ?? $manager->create_list_item();
+                $list_item = $list_item->set_position($pos)->from_array($list)->set_config($list_config);
+                $product->add_list_item('attribute', $list_item->set_type($listtype), $attr_item);
+                unset($list_items[$list_item->get_id()]);
             }
         }
-
-        $product->deleteListItems($listItems);
-
+        $product->delete_list_items($list_items);
         return $this->object()->process($product, $data);
     }
-
     /**
      * Checks if the entry from the mapped data is valid
      *
      * @param array $list Associative list of key/value pairs from the mapped data
      * @return bool True if the entry is valid, false if not
      */
-    protected function checkEntry(array $list): bool
+    protected function check_entry(array $list): bool
     {
         if ($this->val($list, 'attribute.code') === null) {
             return false;
         }
-
-        if (($type = trim($this->val($list, 'product.lists.type', 'default'))) && !isset($this->listTypes[$type])) {
+        if (($type = trim($this->val($list, 'product.lists.type', 'default'))) && !isset($this->list_types[$type])) {
             $msg = sprintf('Invalid type "%1$s" (%2$s)', $type, 'product list');
             throw new \Aimeos\Controller\Jobs\Exception($msg);
         }
-
         if (($type = trim($this->val($list, 'attribute.type', ''))) && !isset($this->types[$type])) {
             $msg = sprintf('Invalid type "%1$s" (%2$s)', $type, 'attribute');
             throw new \Aimeos\Controller\Jobs\Exception($msg);
         }
-
         return true;
     }
-
     /**
      * Returns the attribute item for the given code and type
      *
@@ -202,23 +169,19 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Process
      * @param string $type Attribute type
      * @return \Aimeos\MShop\Attribute\Item\Iface Attribute item object
      */
-    protected function getAttributeItem(string $code, string $type): \Aimeos\MShop\Attribute\Item\Iface
+    protected function get_attribute_item(string $code, string $type): \Aimeos\M_Shop\Attribute\Item\Iface
     {
         if (($item = $this->cache->get($code, $type)) === null) {
-            $manager = \Aimeos\MShop::create($this->context(), 'attribute');
-
+            $manager = \Aimeos\M_Shop::create($this->context(), 'attribute');
             $item = $manager->create();
-            $item->setType($type);
-            $item->setDomain('product');
-            $item->setLabel($code);
-            $item->setCode($code);
-            $item->setStatus(1);
-
+            $item->set_type($type);
+            $item->set_domain('product');
+            $item->set_label($code);
+            $item->set_code($code);
+            $item->set_status(1);
             $item = $manager->save($item);
-
             $this->cache->set($item);
         }
-
         return $item;
     }
 }

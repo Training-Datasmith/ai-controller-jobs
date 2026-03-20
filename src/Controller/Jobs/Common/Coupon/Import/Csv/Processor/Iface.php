@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2017-2026
  * @package Controller
  * @subpackage Common
  */
-
 namespace Aimeos\Controller\Jobs\Common\Coupon\Import\Csv\Processor;
 
 /**
@@ -26,12 +24,7 @@ interface Iface
      * @param array $mapping Associative list of field position in CSV as key and domain item key as value
      * @param \Aimeos\Controller\Jobs\Common\Coupon\Import\Csv\Processor\Iface $object Decorated processor
      */
-    public function __construct(
-        \Aimeos\MShop\ContextIface $context,
-        array $mapping,
-        ?\Aimeos\Controller\Jobs\Common\Coupon\Import\Csv\Processor\Iface $object = null
-    );
-
+    public function __construct(\Aimeos\M_Shop\Context_Iface $context, array $mapping, ?\Aimeos\Controller\Jobs\Common\Coupon\Import\Csv\Processor\Iface $object = null);
     /**
      * Saves the coupon code related data to the storage
      *
@@ -39,5 +32,5 @@ interface Iface
      * @param array $data List of CSV fields with position as key and data as value
      * @return array List of data which hasn't been imported
      */
-    public function process(\Aimeos\MShop\Coupon\Item\Code\Iface $item, array $data): array;
+    public function process(\Aimeos\M_Shop\Coupon\Item\Code\Iface $item, array $data): array;
 }

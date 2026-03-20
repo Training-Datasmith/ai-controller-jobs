@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2025
  * @package Controller
  * @subpackage Jobs
  */
-
 namespace Aimeos\Controller\Jobs\Customer\Import\Csv;
 
 /**
@@ -51,7 +49,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Base i
      * @param string Last part of the class name
      * @since 2025.10
      */
-
     /** controller/jobs/customer/import/csv/decorators/excludes
      * Excludes decorators added by the "common" option from the customer import CSV job controller
      *
@@ -76,7 +73,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Base i
      * @see controller/jobs/customer/import/csv/decorators/global
      * @see controller/jobs/customer/import/csv/decorators/local
      */
-
     /** controller/jobs/customer/import/csv/decorators/global
      * Adds a list of globally available decorators only to the customer import CSV job controller
      *
@@ -99,7 +95,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Base i
      * @see controller/jobs/customer/import/csv/decorators/excludes
      * @see controller/jobs/customer/import/csv/decorators/local
      */
-
     /** controller/jobs/customer/import/csv/decorators/local
      * Adds a list of local decorators only to the customer import CSV job controller
      *
@@ -124,27 +119,24 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Base i
      * @see controller/jobs/customer/import/csv/decorators/excludes
      * @see controller/jobs/customer/import/csv/decorators/global
      */
-
     /**
      * Returns the localized name of the job.
      *
      * @return string Name of the job
      */
-    public function getName(): string
+    public function get_name(): string
     {
         return $this->context()->translate('controller/jobs', 'Customer import CSV');
     }
-
     /**
      * Returns the localized description of the job.
      *
      * @return string Description of the job
      */
-    public function getDescription(): string
+    public function get_description(): string
     {
         return $this->context()->translate('controller/jobs', 'Imports new and updates existing customers from CSV files');
     }
-
     /**
      * Executes the job.
      *
@@ -155,32 +147,26 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Base i
         $context = $this->context();
         $logger = $context->logger();
         $date = date('Y-m-d H:i:s');
-
         try {
             $files = $errors = 0;
             $fs = $context->fs('fs-import');
-            $site = $context->locale()->getSiteItem()->getCode();
+            $site = $context->locale()->get_site_item()->get_code();
             $location = $this->location() . '/' . $site;
-
-            if ($fs->isDir($location) === false) {
+            if ($fs->is_dir($location) === false) {
                 return;
             }
-
             $logger->info(sprintf('Started customer import from "%1$s"', $location), 'import/csv/customer');
-
             foreach (map($fs->scan($location))->sort() as $filename) {
                 $path = $location . '/' . $filename;
                 if ($filename[0] === '.') {
                     continue;
                 }
-                if ($fs instanceof \Aimeos\Base\Filesystem\DirIface && $fs->isDir($path)) {
+                if ($fs instanceof \Aimeos\Base\Filesystem\Dir_Iface && $fs->is_dir($path)) {
                     continue;
                 }
-
                 $errors = $this->import($path);
                 $files++;
             }
-
             /** controller/jobs/customer/import/csv/cleanup
              * Deletes all customers with categories which havn't been updated
              *
@@ -204,19 +190,16 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Base i
                 $count = $this->cleanup($date);
                 $logger->info(sprintf('Cleaned %1$s old customers', $count), 'import/csv/customer');
             }
-
             if ($errors > 0) {
                 $this->mail('Customer CSV import', sprintf('Invalid customer lines during import: %1$d', $errors));
             }
-
             $logger->info(sprintf('Finished customer import from "%1$s"', $location), 'import/csv/customer');
         } catch (\Exception $e) {
-            $logger->error('Customer import error: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), 'import/csv/customer');
-            $this->mail('Customer CSV import error', $e->getMessage());
-            throw new \Aimeos\Controller\Jobs\Exception($e->getMessage());
+            $logger->error('Customer import error: ' . $e->get_message() . "\n" . $e->get_trace_as_string(), 'import/csv/customer');
+            $this->mail('Customer CSV import error', $e->get_message());
+            throw new \Aimeos\Controller\Jobs\Exception($e->get_message());
         }
     }
-
     /**
      * Returns the directory for storing imported files
      *
@@ -254,7 +237,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Base i
         $backup = $this->context()->config()->get('controller/jobs/customer/import/csv/backup');
         return \Aimeos\Base\Str::strtime((string) $backup);
     }
-
     /**
      * Cleans up the given list of customer items
      *
@@ -262,13 +244,11 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Base i
      */
     protected function clean(\Aimeos\Map $customers)
     {
-        $manager = \Aimeos\MShop::create($this->context(), 'customer');
-
+        $manager = \Aimeos\M_Shop::create($this->context(), 'customer');
         $manager->begin();
-        $manager->save($customers->setStatus(-2));
+        $manager->save($customers->set_status(-2));
         $manager->commit();
     }
-
     /**
      * Adds conditions to the filter for fetching customers that should be removed
      *
@@ -279,7 +259,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Base i
     {
         return $filter;
     }
-
     /**
      * Removes all customers which have been updated before the given date/time
      *
@@ -289,20 +268,16 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Base i
     protected function cleanup(string $datetime): int
     {
         $count = 0;
-        $manager = \Aimeos\MShop::create($this->context(), 'customer');
-
+        $manager = \Aimeos\M_Shop::create($this->context(), 'customer');
         $filter = $manager->filter();
         $filter->add('customer.mtime', '<', $datetime);
         $cursor = $manager->cursor($this->call('cleaner', $filter));
-
         while ($items = $manager->iterate($cursor, ['customer' => ['default']])) {
             $this->call('clean', $items);
             $count += count($items);
         }
-
         return $count;
     }
-
     /**
      * Returns the list of domain names that should be retrieved along with the attribute items
      *
@@ -311,7 +286,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Base i
     protected function domains(): array
     {
         $default = ['customer/address', 'customer/property'];
-
         /** controller/jobs/customer/import/csv/domains
          * List of item domain names that should be retrieved along with the customer items
          *
@@ -332,7 +306,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Base i
          */
         return $this->context()->config()->get('controller/jobs/customer/import/csv/domains', $default);
     }
-
     /**
      * Returns the position of the "customer.code" column from the customer item mapping
      *
@@ -340,17 +313,15 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Base i
      * @return int Position of the "customer.code" column
      * @throws \Aimeos\Controller\Jobs\Exception If no mapping for "customer.code" is found
      */
-    protected function getCodePosition(array $mapping): int
+    protected function get_code_position(array $mapping): int
     {
         foreach ($mapping as $pos => $key) {
             if ($key === 'customer.code') {
                 return $pos;
             }
         }
-
         throw new \Aimeos\Controller\Jobs\Exception(sprintf('No "customer.code" column in CSV mapping found'));
     }
-
     /**
      * Returns the customer items for the given codes
      *
@@ -358,14 +329,12 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Base i
      * @param array $domains List of domains whose items should be fetched too
      * @return \Aimeos\Map Associative list of customer codes as key and customer items as value
      */
-    protected function getCustomers(array $codes, array $domains): \Aimeos\Map
+    protected function get_customers(array $codes, array $domains): \Aimeos\Map
     {
-        $manager = \Aimeos\MShop::create($this->context(), 'customer');
+        $manager = \Aimeos\M_Shop::create($this->context(), 'customer');
         $search = $manager->filter()->add(['customer.code' => $codes])->slice(0, count($codes));
-
         return $manager->search($search, $domains)->col(null, 'customer.code');
     }
-
     /**
      * Imports the CSV file from the given path
      *
@@ -376,48 +345,36 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Base i
     {
         $context = $this->context();
         $logger = $context->logger();
-
         $logger->info(sprintf('Started customer import from "%1$s"', $path), 'import/csv/customer');
-
         $maxcnt = $this->max();
         $skiplines = $this->skip();
         $domains = $this->domains();
-
         $mappings = $this->mapping();
-        $processor = $this->getProcessors($mappings);
-        $codePos = $this->getCodePosition($mappings['item']);
-
+        $processor = $this->get_processors($mappings);
+        $code_pos = $this->get_code_position($mappings['item']);
         $fs = $context->fs('fs-import');
         $fh = $fs->reads($path);
         $total = $errors = 0;
-
         for ($i = 0; $i < $skiplines; $i++) {
             fgetcsv($fh, null, ',', '"', '');
         }
-
-        while (($data = $this->getData($fh, $maxcnt, $codePos)) !== []) {
-            $customers = $this->getCustomers(array_keys($data), $domains);
-            $errors += $this->importCustomers($customers, $data, $mappings['item'], [], $processor);
-
+        while (($data = $this->get_data($fh, $maxcnt, $code_pos)) !== []) {
+            $customers = $this->get_customers(array_keys($data), $domains);
+            $errors += $this->import_customers($customers, $data, $mappings['item'], [], $processor);
             $total += count($data);
             unset($customers, $data);
         }
-
         $processor->finish();
         fclose($fh);
-
         if (!empty($backup = $this->backup())) {
             $fs->move($path, $backup);
         } else {
             $fs->rm($path);
         }
-
         $str = sprintf('Finished customer import from "%1$s" (%2$d/%3$d)', $path, $errors, $total);
         $logger->info($str, 'import/csv/customer');
-
         return $errors;
     }
-
     /**
      * Imports the CSV data and creates new customers or updates existing ones
      *
@@ -429,48 +386,34 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Base i
      * @return int Number of customers that couldn't be imported
      * @throws \Aimeos\Controller\Jobs\Exception
      */
-    protected function importCustomers(
-        \Aimeos\Map $customers,
-        array $data,
-        array $mapping,
-        array $types,
-        \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Processor\Iface $processor
-    ): int {
+    protected function import_customers(\Aimeos\Map $customers, array $data, array $mapping, array $types, \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Processor\Iface $processor): int
+    {
         $errors = 0;
         $context = $this->context();
-        $manager = \Aimeos\MShop::create($context, 'customer');
-
+        $manager = \Aimeos\M_Shop::create($context, 'customer');
         foreach ($data as $code => $list) {
             $manager->begin();
-
             try {
                 $code = trim($code);
                 $customer = $customers[$code] ?? $manager->create();
-                $map = current($this->getMappedChunk($list, $mapping)); // there can only be one chunk for the base customer data
-
+                $map = current($this->get_mapped_chunk($list, $mapping));
+                // there can only be one chunk for the base customer data
                 if ($map) {
                     $this->check($map);
-                    $customer = $manager->save($customer->fromArray($map, true));
-
+                    $customer = $manager->save($customer->from_array($map, true));
                     $processor->process($customer, $list);
-
                     $manager->save($customer);
                 }
-
                 $manager->commit();
             } catch (\Throwable $t) {
                 $manager->rollback();
-
-                $msg = sprintf('Unable to import customer with code "%1$s": %2$s', $code, $t->getMessage());
+                $msg = sprintf('Unable to import customer with code "%1$s": %2$s', $code, $t->get_message());
                 $context->logger()->error($msg, 'import/csv/customer');
-
                 $errors++;
             }
         }
-
         return $errors;
     }
-
     /**
      * Returns the path to the directory with the CSV file
      *
@@ -499,7 +442,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Base i
          */
         return (string) $this->context()->config()->get('controller/jobs/customer/import/csv/location', 'customer');
     }
-
     /**
      * Returns the CSV column mapping
      *
@@ -531,16 +473,13 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Base i
          * @see controller/jobs/customer/import/csv/max-size
          * @see controller/jobs/customer/import/csv/skip-lines
          */
-        $map = (array) $this->context()->config()->get('controller/jobs/customer/import/csv/mapping', $this->getDefaultMapping());
-
+        $map = (array) $this->context()->config()->get('controller/jobs/customer/import/csv/mapping', $this->get_default_mapping());
         if (!isset($map['item']) || !is_array($map['item'])) {
             $msg = sprintf('Required mapping key "%1$s" is missing or contains no array', 'item');
             throw new \Aimeos\Controller\Jobs\Exception($msg);
         }
-
         return $map;
     }
-
     /**
      * Returns the maximum number of CSV rows to import at once
      *
@@ -569,7 +508,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Base i
          */
         return (int) $this->context()->config()->get('controller/jobs/customer/import/csv/max-size', 1000);
     }
-
     /**
      * Returns the number of rows skipped in front of each CSV files
      *

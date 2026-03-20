@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2018-2026
  * @package Controller
  * @subpackage Jobs
  */
-
 namespace Aimeos\Controller\Jobs\Supplier\Import\Csv;
 
 /**
@@ -51,7 +49,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Base i
      * @param string Last part of the class name
      * @since 2020.07
      */
-
     /** controller/jobs/supplier/import/csv/decorators/excludes
      * Excludes decorators added by the "common" option from the supplier import CSV job controller
      *
@@ -76,7 +73,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Base i
      * @see controller/jobs/supplier/import/csv/decorators/global
      * @see controller/jobs/supplier/import/csv/decorators/local
      */
-
     /** controller/jobs/supplier/import/csv/decorators/global
      * Adds a list of globally available decorators only to the supplier import CSV job controller
      *
@@ -99,7 +95,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Base i
      * @see controller/jobs/supplier/import/csv/decorators/excludes
      * @see controller/jobs/supplier/import/csv/decorators/local
      */
-
     /** controller/jobs/supplier/import/csv/decorators/local
      * Adds a list of local decorators only to the supplier import CSV job controller
      *
@@ -124,27 +119,24 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Base i
      * @see controller/jobs/supplier/import/csv/decorators/excludes
      * @see controller/jobs/supplier/import/csv/decorators/global
      */
-
     /**
      * Returns the localized name of the job.
      *
      * @return string Name of the job
      */
-    public function getName(): string
+    public function get_name(): string
     {
         return $this->context()->translate('controller/jobs', 'Supplier import CSV');
     }
-
     /**
      * Returns the localized description of the job.
      *
      * @return string Description of the job
      */
-    public function getDescription(): string
+    public function get_description(): string
     {
         return $this->context()->translate('controller/jobs', 'Imports new and updates existing suppliers from CSV files');
     }
-
     /**
      * Executes the job.
      *
@@ -154,43 +146,35 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Base i
     {
         $context = $this->context();
         $logger = $context->logger();
-
         try {
             $errors = 0;
             $fs = $context->fs('fs-import');
-            $site = $context->locale()->getSiteItem()->getCode();
+            $site = $context->locale()->get_site_item()->get_code();
             $location = $this->location() . '/' . $site;
-
-            if ($fs->isDir($location) === false) {
+            if ($fs->is_dir($location) === false) {
                 return;
             }
-
             $logger->info(sprintf('Started supplier import from "%1$s"', $location), 'import/csv/supplier');
-
             foreach (map($fs->scan($location))->sort() as $filename) {
                 $path = $location . '/' . $filename;
                 if ($filename[0] === '.') {
                     continue;
                 }
-                if ($fs instanceof \Aimeos\Base\Filesystem\DirIface && $fs->isDir($path)) {
+                if ($fs instanceof \Aimeos\Base\Filesystem\Dir_Iface && $fs->is_dir($path)) {
                     continue;
                 }
-
                 $errors += $this->import($path);
             }
-
             if ($errors > 0) {
                 $this->mail('Supplier CSV import', sprintf('Invalid supplier lines during import: %1$d', $errors));
             }
-
             $logger->info(sprintf('Finished supplier import from "%1$s"', $location), 'import/csv/supplier');
         } catch (\Exception $e) {
-            $logger->error('Supplier import error: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), 'import/csv/supplier');
-            $this->mail('Supplier CSV import error', $e->getMessage());
-            throw new \Aimeos\Controller\Jobs\Exception($e->getMessage());
+            $logger->error('Supplier import error: ' . $e->get_message() . "\n" . $e->get_trace_as_string(), 'import/csv/supplier');
+            $this->mail('Supplier CSV import error', $e->get_message());
+            throw new \Aimeos\Controller\Jobs\Exception($e->get_message());
         }
     }
-
     /**
      * Returns the directory for storing imported files
      *
@@ -228,7 +212,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Base i
         $backup = $this->context()->config()->get('controller/jobs/supplier/import/csv/backup');
         return \Aimeos\Base\Str::strtime((string) $backup);
     }
-
     /**
      * Returns the list of domain names that should be retrieved along with the supplier items
      *
@@ -257,7 +240,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Base i
         $domains = ['media', 'text', 'supplier/address'];
         return $this->context()->config()->get('controller/jobs/supplier/import/xml/domains', $domains);
     }
-
     /**
      * Returns the position of the "supplier.code" column from the supplier item mapping
      *
@@ -265,17 +247,15 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Base i
      * @return int Position of the "supplier.code" column
      * @throws \Aimeos\Controller\Jobs\Exception If no mapping for "supplier.code" is found
      */
-    protected function getCodePosition(array $mapping): int
+    protected function get_code_position(array $mapping): int
     {
         foreach ($mapping as $pos => $key) {
             if ($key === 'supplier.code') {
                 return $pos;
             }
         }
-
         throw new \Aimeos\Controller\Jobs\Exception(sprintf('No "supplier.code" column in CSV mapping found'));
     }
-
     /**
      * Returns the supplier items for the given codes
      *
@@ -283,14 +263,12 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Base i
      * @param array $domains List of domains whose items should be fetched too
      * @return \Aimeos\Map Associative list of supplier codes as key and supplier items as value
      */
-    protected function getSuppliers(array $codes, array $domains): \Aimeos\Map
+    protected function get_suppliers(array $codes, array $domains): \Aimeos\Map
     {
-        $manager = \Aimeos\MShop::create($this->context(), 'supplier');
+        $manager = \Aimeos\M_Shop::create($this->context(), 'supplier');
         $search = $manager->filter()->add(['supplier.code' => $codes])->slice(0, count($codes));
-
         return $manager->search($search, $domains)->col(null, 'supplier.code');
     }
-
     /**
      * Imports the CSV file from the given path
      *
@@ -301,47 +279,35 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Base i
     {
         $context = $this->context();
         $logger = $context->logger();
-
         $logger->info(sprintf('Started supplier import from "%1$s"', $path), 'import/csv/supplier');
-
         $maxcnt = $this->max();
         $skiplines = $this->skip();
         $domains = $this->domains();
-
         $mappings = $this->mapping();
-        $processor = $this->getProcessors($mappings);
-        $codePos = $this->getCodePosition($mappings['item']);
-
+        $processor = $this->get_processors($mappings);
+        $code_pos = $this->get_code_position($mappings['item']);
         $fs = $context->fs('fs-import');
         $fh = $fs->reads($path);
         $total = $errors = 0;
-
         for ($i = 0; $i < $skiplines; $i++) {
             fgetcsv($fh, null, ',', '"', '');
         }
-
-        while (($data = $this->getData($fh, $maxcnt, $codePos)) !== []) {
-            $suppliers = $this->getSuppliers(array_keys($data), $domains);
-            $errors += $this->importSuppliers($suppliers, $data, $mappings['item'], $processor);
-
+        while (($data = $this->get_data($fh, $maxcnt, $code_pos)) !== []) {
+            $suppliers = $this->get_suppliers(array_keys($data), $domains);
+            $errors += $this->import_suppliers($suppliers, $data, $mappings['item'], $processor);
             $total += count($data);
             unset($suppliers, $data);
         }
-
         fclose($fh);
-
         if (!empty($backup = $this->backup())) {
             $fs->move($path, $backup);
         } else {
             $fs->rm($path);
         }
-
         $str = sprintf('Finished supplier import from "%1$s" (%2$d/%3$d)', $path, $errors, $total);
         $logger->info($str, 'import/csv/supplier');
-
         return $errors;
     }
-
     /**
      * Imports the CSV data and creates new suppliers or updates existing ones
      *
@@ -352,47 +318,34 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Base i
      * @return int Number of suppliers that couldn't be imported
      * @throws \Aimeos\Controller\Jobs\Exception
      */
-    protected function importSuppliers(
-        \Aimeos\Map $suppliers,
-        array $data,
-        array $mapping,
-        \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Iface $processor
-    ): int {
+    protected function import_suppliers(\Aimeos\Map $suppliers, array $data, array $mapping, \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Iface $processor): int
+    {
         $errors = 0;
         $context = $this->context();
-        $manager = \Aimeos\MShop::create($context, 'supplier');
-
+        $manager = \Aimeos\M_Shop::create($context, 'supplier');
         foreach ($data as $code => $list) {
             $manager->begin();
-
             try {
                 $code = trim($code);
                 $item = $suppliers[$code] ?? $manager->create();
-                $map = current($this->getMappedChunk($list, $mapping)); // there can only be one chunk for the base supplier data
-
+                $map = current($this->get_mapped_chunk($list, $mapping));
+                // there can only be one chunk for the base supplier data
                 if ($map) {
-                    $item->fromArray($map, true);
-
+                    $item->from_array($map, true);
                     $list = $processor->process($item, $list);
                     $suppliers[$code] = $item;
-
                     $manager->save($item);
                 }
-
                 $manager->commit();
             } catch (\Exception $e) {
                 $manager->rollback();
-
-                $msg = sprintf('Unable to import supplier with code "%1$s": %2$s', $code, $e->getMessage());
+                $msg = sprintf('Unable to import supplier with code "%1$s": %2$s', $code, $e->get_message());
                 $context->logger()->error($msg, 'import/csv/supplier');
-
                 $errors++;
             }
         }
-
         return $errors;
     }
-
     /**
      * Returns the path to the directory with the CSV file
      *
@@ -420,7 +373,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Base i
          */
         return (string) $this->context()->config()->get('controller/jobs/supplier/import/csv/location', 'supplier');
     }
-
     /**
      * Returns the CSV column mapping
      *
@@ -452,16 +404,13 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Base i
          * @see controller/jobs/supplier/import/csv/backup
          * @see controller/jobs/supplier/import/csv/max-size
          */
-        $map = (array) $this->context()->config()->get('controller/jobs/supplier/import/csv/mapping', $this->getDefaultMapping());
-
+        $map = (array) $this->context()->config()->get('controller/jobs/supplier/import/csv/mapping', $this->get_default_mapping());
         if (!isset($map['item']) || !is_array($map['item'])) {
             $msg = sprintf('Required mapping key "%1$s" is missing or contains no array', 'item');
             throw new \Aimeos\Controller\Jobs\Exception($msg);
         }
-
         return $map;
     }
-
     /**
      * Returns the maximum number of CSV rows to import at once
      *
@@ -489,7 +438,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Base i
          */
         return (int) $this->context()->config()->get('controller/jobs/supplier/import/csv/max-size', 1000);
     }
-
     /**
      * Returns the number of rows skipped in front of each CSV files
      *

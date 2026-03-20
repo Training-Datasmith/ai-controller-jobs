@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2015-2026
  * @package Controller
  * @subpackage Jobs
  */
-
 namespace Aimeos\Controller\Jobs\Catalog\Export\Sitemap;
 
 /**
@@ -51,7 +49,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param string Last part of the class name
      * @since 2019.02
      */
-
     /** controller/jobs/catalog/export/sitemap/decorators/excludes
      * Excludes decorators added by the "common" option from the catalog export sitemap job controller
      *
@@ -76,7 +73,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/catalog/export/sitemap/decorators/global
      * @see controller/jobs/catalog/export/sitemap/decorators/local
      */
-
     /** controller/jobs/catalog/export/sitemap/decorators/global
      * Adds a list of globally available decorators only to the catalog export sitemap job controller
      *
@@ -99,7 +95,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/catalog/export/sitemap/decorators/excludes
      * @see controller/jobs/catalog/export/sitemap/decorators/local
      */
-
     /** controller/jobs/catalog/export/sitemap/decorators/local
      * Adds a list of local decorators only to the catalog export sitemap job controller
      *
@@ -124,29 +119,25 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/catalog/export/sitemap/export/sitemap/decorators/excludes
      * @see controller/jobs/catalog/export/sitemap/export/sitemap/decorators/global
      */
-
     private ?\Aimeos\Map $locales = null;
-
     /**
      * Returns the localized name of the job.
      *
      * @return string Name of the job
      */
-    public function getName(): string
+    public function get_name(): string
     {
         return $this->context()->translate('controller/jobs', 'Catalog site map');
     }
-
     /**
      * Returns the localized description of the job.
      *
      * @return string Description of the job
      */
-    public function getDescription(): string
+    public function get_description(): string
     {
         return $this->context()->translate('controller/jobs', 'Creates a catalog site map for search engines');
     }
-
     /**
      * Executes the job.
      *
@@ -169,21 +160,18 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          * @see controller/jobs/catalog/export/sitemap/changefreq
          */
         $hidden = $this->context()->config()->get('controller/jobs/catalog/export/sitemap/hidden', false);
-
-        $this->createIndex($this->export($hidden ? null : true));
+        $this->create_index($this->export($hidden ? null : true));
     }
-
     /**
      * Adds the content for the site map index file
      *
      * @param array $files List of generated site map file names
      */
-    protected function createIndex(array $files)
+    protected function create_index(array $files)
     {
         $context = $this->context();
         $config = $context->config();
         $view = $context->view();
-
         /** controller/jobs/catalog/export/sitemap/template-index
          * Relative path to the XML site map index template of the catalog site map job controller.
          *
@@ -204,19 +192,15 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          * @see controller/jobs/catalog/export/sitemap/template-items
          */
         $tplconf = 'controller/jobs/catalog/export/sitemap/template-index';
-
-        if (empty($baseUrl = rtrim($config->get('resource/fs/baseurl', ''), '/'))) {
+        if (empty($base_url = rtrim($config->get('resource/fs/baseurl', ''), '/'))) {
             $msg = sprintf('Required configuration for "%1$s" is missing', 'resource/fs/baseurl');
             throw new \Aimeos\Controller\Jobs\Exception($msg);
         }
-
-        $view->siteFiles = $files;
-        $view->baseUrl = $baseUrl . '/';
-
+        $view->site_files = $files;
+        $view->base_url = $base_url . '/';
         $content = $view->render($config->get($tplconf, 'catalog/export/sitemap-index'));
         $context->fs()->write($this->call('indexFilename'), $content);
     }
-
     /**
      * Exports the sitemap files
      *
@@ -225,26 +209,20 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      */
     protected function export(?bool $default = true): array
     {
-        $manager = \Aimeos\MShop::create($this->context(), 'catalog');
-
+        $manager = \Aimeos\M_Shop::create($this->context(), 'catalog');
         $search = $manager->filter($default)->order('catalog.id');
         $cursor = $manager->cursor($search->slice(0, $this->max()));
-
         $domains = $this->domains();
         $fs = $this->fs();
-
         $filenum = 1;
         $files = [];
-
         while ($items = $manager->iterate($cursor, $domains)) {
             $filename = $this->call('filename', $filenum++);
             $fs->write($filename, $this->render($items));
             $files[] = $filename;
         }
-
         return $files;
     }
-
     /**
      * Returns the domain names whose items should be exported too
      *
@@ -266,7 +244,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          */
         return $this->context()->config()->get('controller/jobs/catalog/export/sitemap/domains', ['text']);
     }
-
     /**
      * Returns the sitemap file name
      *
@@ -277,7 +254,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
     {
         return sprintf('aimeos-catalog-sitemap-%d.xml', $number);
     }
-
     /**
      * Returns the file system for storing the exported files
      *
@@ -287,17 +263,15 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
     {
         return $this->context()->fs('fs');
     }
-
     /**
      * Returns the file name of the sitemap index file
      *
      * @return string File name
      */
-    protected function indexFilename(): string
+    protected function index_filename(): string
     {
         return 'aimeos-catalog-sitemap-index.xml';
     }
-
     /**
      * Returns the available locale items for the current site
      *
@@ -306,15 +280,12 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
     protected function locales(): \Aimeos\Map
     {
         if (!isset($this->locales)) {
-            $manager = \Aimeos\MShop::create($this->context(), 'locale');
-            $filter = $manager->filter(true)->add(['locale.siteid' => $this->context()->locale()->getSiteId()]);
-
+            $manager = \Aimeos\M_Shop::create($this->context(), 'locale');
+            $filter = $manager->filter(true)->add(['locale.siteid' => $this->context()->locale()->get_site_id()]);
             $this->locales = $manager->search($filter->order('locale.position')->slice(0, 10000));
         }
-
         return $this->locales;
     }
-
     /**
      * Returns the maximum number of exported categories per file
      *
@@ -340,7 +311,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          */
         return $this->context()->config()->get('controller/jobs/catalog/export/sitemap/max-items', 10000);
     }
-
     /**
      * Creates sitemap with the given categories
      *
@@ -368,13 +338,10 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          * @since 2022.10
          */
         $tplconf = 'controller/jobs/catalog/export/sitemap/template';
-
         $context = $this->context();
         $view = $context->view();
-
-        $view->siteItems = $items;
-        $view->siteLocales = $this->locales();
-
+        $view->site_items = $items;
+        $view->site_locales = $this->locales();
         return $view->render($context->config()->get($tplconf, 'catalog/export/sitemap-items'));
     }
 }

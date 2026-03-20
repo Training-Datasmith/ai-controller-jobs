@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2025
  * @package Controller
  * @subpackage Common
  */
-
 namespace Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Processor\Property;
 
 /**
@@ -28,7 +26,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Proces
      * @param string Last part of the processor class name
      * @since 2025.10
      */
-
     /**
      * Saves the customer property related data to the storage
      *
@@ -36,38 +33,30 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Proces
      * @param array $data List of CSV fields with position as key and data as value
      * @return array List of data which hasn't been imported
      */
-    public function process(\Aimeos\MShop\Customer\Item\Iface $customer, array $data): array
+    public function process(\Aimeos\M_Shop\Customer\Item\Iface $customer, array $data): array
     {
-        $manager = \Aimeos\MShop::create($this->context(), 'customer');
-
-        $propMap = [];
-        $items = $customer->getPropertyItems(null, false);
-        $map = $this->getMappedChunk($data, $this->getMapping());
-
+        $manager = \Aimeos\M_Shop::create($this->context(), 'customer');
+        $prop_map = [];
+        $items = $customer->get_property_items(null, false);
+        $map = $this->get_mapped_chunk($data, $this->get_mapping());
         foreach ($items as $item) {
-            $propMap[$item->getValue()][$item->getType()] = $item;
+            $prop_map[$item->get_value()][$item->get_type()] = $item;
         }
-
         foreach ($map as $list) {
             if (($value = $this->val($list, 'customer.property.value')) === null) {
                 continue;
             }
-
             $type = $this->val($list, 'customer.property.type');
-            $this->addType('customer/property/type', 'customer', $type);
-
-            if (isset($propMap[$value][$type])) {
-                $item = $propMap[$value][$type];
-                $items->remove($item->getId());
+            $this->add_type('customer/property/type', 'customer', $type);
+            if (isset($prop_map[$value][$type])) {
+                $item = $prop_map[$value][$type];
+                $items->remove($item->get_id());
             } else {
-                $item = $manager->createPropertyItem()->setType($type);
+                $item = $manager->create_property_item()->set_type($type);
             }
-
-            $customer->addPropertyItem($item->fromArray($list));
+            $customer->add_property_item($item->from_array($list));
         }
-
-        $customer->deletePropertyItems($items);
-
+        $customer->delete_property_items($items);
         return $this->object()->process($customer, $data);
     }
 }

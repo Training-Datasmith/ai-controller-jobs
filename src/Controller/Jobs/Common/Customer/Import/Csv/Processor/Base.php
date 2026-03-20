@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2015-2026
  * @package Controller
  * @subpackage Common
  */
-
 namespace Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Processor;
 
 /**
@@ -20,8 +18,7 @@ namespace Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Processor;
 abstract class Base extends \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Base
 {
     use \Aimeos\Controller\Jobs\Common\Types;
-    private \Aimeos\MShop\ContextIface $context;
-
+    private \Aimeos\M_Shop\Context_Iface $context;
     /**
      * Initializes the object
      *
@@ -29,14 +26,10 @@ abstract class Base extends \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\B
      * @param array $mapping Associative list of field position in CSV as key and domain item key as value
      * @param \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Processor\Iface $object Decorated processor
      */
-    public function __construct(
-        \Aimeos\MShop\ContextIface $context,
-        private array $mapping,
-        private \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Processor\Iface $object = null
-    ) {
+    public function __construct(\Aimeos\M_Shop\Context_Iface $context, private array $mapping, private \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\Processor\Iface $object = null)
+    {
         $this->context = $context;
     }
-
     /**
      * Stores all types for which no type items exist yet
      */
@@ -45,10 +38,8 @@ abstract class Base extends \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\B
         if ($this->object) {
             $this->object->finish();
         }
-
-        $this->saveTypes();
+        $this->save_types();
     }
-
     /**
      * Adds the list item default values and returns the resulting array
      *
@@ -56,63 +47,53 @@ abstract class Base extends \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\B
      * @param int $pos Computed position of the list item in the associated list of items
      * @return array Given associative list enriched by default values if they were not already set
      */
-    protected function addListItemDefaults(array $list, int $pos): array
+    protected function add_list_item_defaults(array $list, int $pos): array
     {
         if (!isset($list['customer.lists.position'])) {
             $list['customer.lists.position'] = $pos;
         }
-
         if (!isset($list['customer.lists.status'])) {
             $list['customer.lists.status'] = 1;
         }
-
         return $list;
     }
-
     /**
      * Returns the context item
      *
      * @return \Aimeos\MShop\ContextIface Context object
      */
-    protected function context(): \Aimeos\MShop\ContextIface
+    protected function context(): \Aimeos\M_Shop\Context_Iface
     {
         return $this->context;
     }
-
     /**
      * Returns the configuration for the given string
      *
      * @param string $value Configuration string
      * @return array Configuration settings
      */
-    protected function getListConfig(string $value): array
+    protected function get_list_config(string $value): array
     {
         $config = [];
-
         foreach (array_filter(explode("\n", $value)) as $line) {
             $parts = explode(':', $line);
-
             if (count($parts) !== 2) {
                 throw new \Aimeos\Controller\Jobs\Exception('Invalid list configuration: ' . $value);
             }
-
             [$key, $val] = $parts;
             $config[$key] = $val;
         }
-
         return $config;
     }
-
     /**
      * Returns the mapping list
      *
      * @return array Associative list of field positions in CSV as keys and domain item keys as values
      */
-    protected function getMapping(): array
+    protected function get_mapping(): array
     {
         return $this->mapping;
     }
-
     /**
      * Returns the decorated processor object
      *
@@ -124,7 +105,6 @@ abstract class Base extends \Aimeos\Controller\Jobs\Common\Customer\Import\Csv\B
         if ($this->object === null) {
             throw new \Aimeos\Controller\Jobs\Exception('No processor object available');
         }
-
         return $this->object;
     }
 }

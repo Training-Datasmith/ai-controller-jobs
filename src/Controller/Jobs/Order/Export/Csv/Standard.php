@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2017-2026
  * @package Controller
  * @subpackage Jobs
  */
-
 namespace Aimeos\Controller\Jobs\Order\Export\Csv;
 
 /**
@@ -51,7 +49,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param string Last part of the class name
      * @since 2015.01
      */
-
     /** controller/jobs/order/export/csv/decorators/excludes
      * Excludes decorators added by the "common" option from the order export CSV job controller
      *
@@ -76,7 +73,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/order/export/csv/decorators/global
      * @see controller/jobs/order/export/csv/decorators/local
      */
-
     /** controller/jobs/order/export/csv/decorators/global
      * Adds a list of globally available decorators only to the order export CSV job controller
      *
@@ -99,7 +95,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/order/export/csv/decorators/excludes
      * @see controller/jobs/order/export/csv/decorators/local
      */
-
     /** controller/jobs/order/export/csv/decorators/local
      * Adds a list of local decorators only to the order export CSV job controller
      *
@@ -124,29 +119,25 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/order/export/csv/decorators/excludes
      * @see controller/jobs/order/export/csv/decorators/global
      */
-
     use \Aimeos\Macro\Macroable;
-
     /**
      * Returns the localized name of the job.
      *
      * @return string Name of the job
      */
-    public function getName(): string
+    public function get_name(): string
     {
         return $this->context()->translate('controller/jobs', 'Order export CSV');
     }
-
     /**
      * Returns the localized description of the job.
      *
      * @return string Description of the job
      */
-    public function getDescription(): string
+    public function get_description(): string
     {
         return $this->context()->translate('controller/jobs', 'Exports orders to CSV file');
     }
-
     /**
      * Executes the job.
      *
@@ -156,25 +147,20 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
     {
         $context = $this->context();
         $mq = $context->queue('mq-admin', 'order-export');
-
         while ($msg = $mq->get()) {
             try {
-                $body = $msg->getBody();
-
+                $body = $msg->get_body();
                 if (($data = json_decode($body, true)) === null) {
                     throw new \Aimeos\Controller\Jobs\Exception(sprintf('Invalid message: %1$s', $body));
                 }
-
                 $this->export($data);
             } catch (\Exception $e) {
-                $str = 'Order export error: ' . $e->getMessage() . "\n" . $e->getTraceAsString();
+                $str = 'Order export error: ' . $e->get_message() . "\n" . $e->get_trace_as_string();
                 $context->logger()->error($str, 'order/export/csv');
             }
-
             $mq->del($msg);
         }
     }
-
     /**
      * Initializes the search criteria
      *
@@ -198,10 +184,8 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          * @since 2023.04
          */
         $size = (int) $this->context()->config()->get('controller/jobs/order/export/csv/max-size', 1000);
-
         return $criteria->add($criteria->parse($msg['filter'] ?? []))->order($msg['sort'] ?? [])->slice(0, $size);
     }
-
     /**
      * Exports the orders
      *
@@ -212,30 +196,23 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
         if (($fh = tmpfile()) === false) {
             throw new \Aimeos\Controller\Jobs\Exception('Unable to create temporary file');
         }
-
         $path = $this->path();
-        $lcontext = $this->getLocaleContext($msg);
-        $manager = \Aimeos\MShop::create($lcontext, 'order');
-
+        $lcontext = $this->get_locale_context($msg);
+        $manager = \Aimeos\M_Shop::create($lcontext, 'order');
         $cursor = $manager->cursor($this->criteria($manager->filter(false, true), $msg));
         $ref = $lcontext->config()->get('mshop/order/manager/subdomains', []);
-
         while ($items = $manager->iterate($cursor, $ref)) {
             $items = $this->call('hydrate', $items);
-
             if (fwrite($fh, $this->render($items)) === false) {
                 throw new \Aimeos\Controller\Jobs\Exception('Unable to add data to temporary file');
             }
         }
-
         rewind($fh);
         $lcontext->fs('fs-admin')->writes($path, $fh);
         fclose($fh);
-
-        $manager = \Aimeos\MAdmin::create($lcontext, 'job');
-        $manager->save($manager->create()->setPath($path)->setLabel($path), false);
+        $manager = \Aimeos\M_Admin::create($lcontext, 'job');
+        $manager->save($manager->create()->set_path($path)->set_label($path), false);
     }
-
     /**
      * Hydrates the given list of items
      *
@@ -246,24 +223,20 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
     {
         return $items;
     }
-
     /**
      * Returns a new context including the locale from the message data
      *
      * @param array $msg Message data including a "sitecode" value
      * @return \Aimeos\MShop\ContextIface New context item with updated locale
      */
-    protected function getLocaleContext(array $msg): \Aimeos\MShop\ContextIface
+    protected function get_locale_context(array $msg): \Aimeos\M_Shop\Context_Iface
     {
         $lcontext = clone $this->context();
-        $manager = \Aimeos\MShop::create($lcontext, 'locale');
-
-        $sitecode = ($msg['sitecode'] ?? 'default');
-        $localeItem = $manager->bootstrap($sitecode, '', '', false, \Aimeos\MShop\Locale\Manager\Base::SITE_ALL);
-
-        return $lcontext->setLocale($localeItem);
+        $manager = \Aimeos\M_Shop::create($lcontext, 'locale');
+        $sitecode = $msg['sitecode'] ?? 'default';
+        $locale_item = $manager->bootstrap($sitecode, '', '', false, \Aimeos\M_Shop\Locale\Manager\Base::SITE_ALL);
+        return $lcontext->set_locale($locale_item);
     }
-
     /**
      * Returns the relative path the orders should be exported to
      *
@@ -287,7 +260,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
         $path = $this->context()->config()->get('controller/jobs/order/export/csv/path', 'order-export_%Y-%m-%d_%H-%i-%s.csv');
         return \Aimeos\Base\Str::strtime($path);
     }
-
     /**
      * Creates the CSV file for the given orders
      *
@@ -297,7 +269,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
     protected function render(iterable $items): string
     {
         $context = $this->context();
-
         /** controller/jobs/order/export/csv/template
          * Relative path to the template for generating the CSV order export.
          *
@@ -312,7 +283,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          * @since 2023.04
          */
         $template = $context->config()->get('controller/jobs/order/export/csv/template', 'order/export/csv/body');
-
         return $context->view()->assign(['items' => $items])->render($template);
     }
 }

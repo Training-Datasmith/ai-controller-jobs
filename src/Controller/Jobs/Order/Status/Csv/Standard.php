@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2021-2026
  * @package Controller
  * @subpackage Jobs
  */
-
 namespace Aimeos\Controller\Jobs\Order\Status\Csv;
 
 /**
@@ -51,7 +49,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param string Last part of the class name
      * @since 2021.10
      */
-
     /** controller/jobs/order/status/csv/decorators/excludes
      * Excludes decorators added by the "common" option from the order status CSV job controller
      *
@@ -76,7 +73,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/order/status/csv/decorators/global
      * @see controller/jobs/order/status/csv/decorators/local
      */
-
     /** controller/jobs/order/status/csv/decorators/global
      * Adds a list of globally available decorators only to the order status CSV job controller
      *
@@ -99,7 +95,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/order/status/csv/decorators/excludes
      * @see controller/jobs/order/status/csv/decorators/local
      */
-
     /** controller/jobs/order/status/csv/decorators/local
      * Adds a list of local decorators only to the order status CSV job controller
      *
@@ -124,32 +119,28 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/order/status/csv/decorators/excludes
      * @see controller/jobs/order/status/csv/decorators/global
      */
-
     /**
      * Returns the localized name of the job.
      *
      * @return string Name of the job
      */
-    public function getName(): string
+    public function get_name(): string
     {
         return $this->context()->translate('controller/jobs', 'Order status import CSV');
     }
-
     /**
      * Returns the localized description of the job.
      */
-    public function getDescription(): string
+    public function get_description(): string
     {
         return $this->context()->translate('controller/jobs', 'Status import for orders from CSV file');
     }
-
     /**
      * Executes the job.
      */
     public function run(): void
     {
         $context = $this->context();
-
         /** controller/jobs/order/status/csv/directory
          * Path to the CSV files relative to the order status file system
          *
@@ -164,32 +155,27 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          * @since 2021.10
          */
         $dirname = $context->config()->get('controller/jobs/order/status/csv/directory', 'orderstatus');
-
         $fs = $context->fs('fs-import');
-        $fs->has($dirname . '/_done') ?: $fs->mkDir($dirname . '/_done');
-
+        $fs->has($dirname . '/_done') ?: $fs->mk_dir($dirname . '/_done');
         foreach ($fs->scan($dirname) as $name) {
             if (in_array($name, ['.', '..'])) {
                 continue;
             }
-            if ($fs->isDir($dirname . '/' . $name)) {
+            if ($fs->is_dir($dirname . '/' . $name)) {
                 continue;
             }
             try {
                 $handle = $fs->reads($dirname . '/' . $name);
-
                 $this->import($handle);
-
                 $fs->move($dirname . '/' . $name, $dirname . '/_done/' . $name);
             } catch (\Exception $e) {
-                $msg = 'Order status import error: ' . $e->getMessage() . "\n" . $e->getTraceAsString();
+                $msg = 'Order status import error: ' . $e->get_message() . "\n" . $e->get_trace_as_string();
                 $context->logger()->error($msg, 'order/status/csv');
             } finally {
                 !is_resource($handle ?? null) ?: fclose($handle);
             }
         }
     }
-
     /**
      * Returns the rows from the resource handle
      *
@@ -198,30 +184,25 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param string $sep Single byte character for separating the values
      * @return array<int,array<string,array<int,int|string>>>|null Array of order and product status rows or NULL for no more rows
      */
-    protected function getData($handle, int $maxcnt, string $sep): ?array
+    protected function get_data($handle, int $maxcnt, string $sep): ?array
     {
         $count = 0;
         $orders = $products = [];
-
         while ($count++ < $maxcnt && ($row = fgetcsv($handle, 0, $sep, '"', '')) && $row !== [null]) {
             if (empty($row[0])) {
                 continue;
             }
-
             if (!empty($row[1])) {
                 $products[$row[1]] = $row;
             } else {
                 $orders[$row[0]] = $row;
             }
         }
-
         if (!empty($orders) || !empty($products)) {
             return [$orders, $products];
         }
-
         return null;
     }
-
     /**
      * Imports the order status CSV
      *
@@ -231,7 +212,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
     {
         $context = $this->context();
         $config = $context->config();
-
         /** controller/jobs/order/status/csv/max-size
          * Maximum number of CSV rows to import at once
          *
@@ -246,7 +226,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          * @since 2021.10
          */
         $maxcnt = (int) $config->get('controller/jobs/order/status/csv/max-size', 1000);
-
         /** controller/jobs/order/status/csv/separator
          * Character separating the values in the CSV file
          *
@@ -257,7 +236,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          * @since 2021.10
          */
         $sep = $config->get('controller/jobs/order/status/csv/separator', ',');
-
         /** controller/jobs/order/status/csv/skip
          * Number of rows that should be skipped
          *
@@ -268,36 +246,26 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          * @since 2021.10
          */
         $skip = (int) $config->get('controller/jobs/order/status/csv/skip', 0);
-
         for ($i = 0; $i < $skip; $i++) {
             fgetcsv($handle, 0, $sep, '"', '');
         }
-
-        $pmanager = \Aimeos\MShop::create($context, 'order/product');
-        $manager = \Aimeos\MShop::create($context, 'order');
-
-        while ($data = $this->getData($handle, $maxcnt, $sep)) {
+        $pmanager = \Aimeos\M_Shop::create($context, 'order/product');
+        $manager = \Aimeos\M_Shop::create($context, 'order');
+        while ($data = $this->get_data($handle, $maxcnt, $sep)) {
             if (!empty($orders = $data[0])) {
-                $filter = $manager->filter()->slice(0, count($orders))
-                    ->add(['order.id' => array_keys($orders)]);
+                $filter = $manager->filter()->slice(0, count($orders))->add(['order.id' => array_keys($orders)]);
                 $items = $manager->search($filter);
-
                 foreach ($items as $item) {
-                    $item->setStatusDelivery($orders[$item->getId()][2] ?? $item->getStatusDelivery());
+                    $item->set_status_delivery($orders[$item->get_id()][2] ?? $item->get_status_delivery());
                 }
-
                 $manager->save($items);
             }
-
             if (!empty($products = $data[1])) {
-                $filter = $pmanager->filter()->slice(0, count($products))
-                    ->add(['order.product.id' => array_keys($products)]);
+                $filter = $pmanager->filter()->slice(0, count($products))->add(['order.product.id' => array_keys($products)]);
                 $items = $pmanager->search($filter);
-
                 foreach ($items as $item) {
-                    $item->setStatusDelivery($products[$item->getId()][2] ?? $item->getStatusDelivery());
+                    $item->set_status_delivery($products[$item->get_id()][2] ?? $item->get_status_delivery());
                 }
-
                 $pmanager->save($items);
             }
         }

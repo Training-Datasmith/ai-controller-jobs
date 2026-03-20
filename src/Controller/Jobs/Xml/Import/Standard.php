@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2020-2026
  * @package Controller
  * @subpackage Jobs
  */
-
 namespace Aimeos\Controller\Jobs\Xml\Import;
 
 /**
@@ -51,7 +49,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param string Last part of the class name
      * @since 2019.04
      */
-
     /** controller/jobs/xml/import/decorators/excludes
      * Excludes decorators added by the "common" option from the product import CSV job controller
      *
@@ -76,7 +73,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/xml/import/decorators/global
      * @see controller/jobs/xml/import/decorators/local
      */
-
     /** controller/jobs/xml/import/decorators/global
      * Adds a list of globally available decorators only to the product import CSV job controller
      *
@@ -99,7 +95,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/xml/import/decorators/excludes
      * @see controller/jobs/xml/import/decorators/local
      */
-
     /** controller/jobs/xml/import/decorators/local
      * Adds a list of local decorators only to the product import CSV job controller
      *
@@ -124,27 +119,24 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/xml/import/decorators/excludes
      * @see controller/jobs/xml/import/decorators/global
      */
-
     /**
      * Returns the localized name of the job.
      *
      * @return string Name of the job
      */
-    public function getName(): string
+    public function get_name(): string
     {
         return $this->context()->translate('controller/jobs', 'All XML import');
     }
-
     /**
      * Returns the localized description of the job.
      *
      * @return string Description of the job
      */
-    public function getDescription(): string
+    public function get_description(): string
     {
         return $this->context()->translate('controller/jobs', 'Executes all XML importers and rebuild the index');
     }
-
     /**
      * Executes the job.
      *
@@ -152,23 +144,18 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      */
     public function run(): void
     {
-        $aimeos = $this->getAimeos();
+        $aimeos = $this->get_aimeos();
         $context = $this->context();
         $logger = $context->logger();
-
         $logger->info('Started XML import', 'import/xml');
-
         \Aimeos\Controller\Jobs::create($context, $aimeos, 'group/import/xml')->run();
         \Aimeos\Controller\Jobs::create($context, $aimeos, 'customer/import/xml')->run();
         \Aimeos\Controller\Jobs::create($context, $aimeos, 'attribute/import/xml')->run();
         \Aimeos\Controller\Jobs::create($context, $aimeos, 'product/import/xml')->run();
         \Aimeos\Controller\Jobs::create($context, $aimeos, 'supplier/import/xml')->run();
         \Aimeos\Controller\Jobs::create($context, $aimeos, 'catalog/import/xml')->run();
-
         \Aimeos\Controller\Jobs::create($context, $aimeos, 'index/rebuild')->run();
-
-        $context->cache()->deleteByTags(['product']);
-
+        $context->cache()->delete_by_tags(['product']);
         $logger->info('Finished XML import', 'import/xml');
     }
 }

@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2017-2026
  * @package Controller
  * @subpackage Jobs
  */
-
 namespace Aimeos\Controller\Jobs\Media\Scale;
 
 /**
@@ -51,7 +49,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param string Last part of the class name
      * @since 2017.01
      */
-
     /** controller/jobs/media/scale/decorators/excludes
      * Excludes decorators added by the "common" option from the media scale controllers
      *
@@ -76,7 +73,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/media/scale/decorators/global
      * @see controller/jobs/media/scale/decorators/local
      */
-
     /** controller/jobs/media/scale/decorators/global
      * Adds a list of globally available decorators only to the media scale controllers
      *
@@ -99,7 +95,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/media/scale/decorators/excludes
      * @see controller/jobs/media/scale/decorators/local
      */
-
     /** controller/jobs/media/scale/decorators/local
      * Adds a list of local decorators only to the media scale controllers
      *
@@ -123,27 +118,24 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/media/scale/decorators/excludes
      * @see controller/jobs/media/scale/decorators/global
      */
-
     /**
      * Returns the localized name of the job.
      *
      * @return string Name of the job
      */
-    public function getName(): string
+    public function get_name(): string
     {
         return $this->context()->translate('controller/jobs', 'Rescale product images');
     }
-
     /**
      * Returns the localized description of the job.
      *
      * @return string Description of the job
      */
-    public function getDescription(): string
+    public function get_description(): string
     {
         return $this->context()->translate('controller/jobs', 'Rescales product images to the new sizes');
     }
-
     /**
      * Executes the job.
      *
@@ -153,40 +145,29 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
     {
         $context = $this->context();
         $process = $context->process();
-        $manager = \Aimeos\MShop::create($context, 'media');
-
+        $manager = \Aimeos\M_Shop::create($context, 'media');
         $filter = $manager->filter();
-        $filter->add($filter->and([
-            $filter->compare('==', 'media.siteid', $context->locale()->getSiteId()),
-            $filter->compare('==', 'media.domain', ['attribute', 'catalog', 'product', 'service', 'supplier']),
-            $filter->compare('=~', 'media.mimetype', 'image/'),
-        ]));
+        $filter->add($filter->and([$filter->compare('==', 'media.siteid', $context->locale()->get_site_id()), $filter->compare('==', 'media.domain', ['attribute', 'catalog', 'product', 'service', 'supplier']), $filter->compare('=~', 'media.mimetype', 'image/')]));
         $cursor = $manager->cursor($filter);
-
-        $fcn = function (\Aimeos\MShop\ContextIface $context, \Aimeos\Map $items): void {
+        $fcn = function (\Aimeos\M_Shop\Context_Iface $context, \Aimeos\Map $items): void {
             $this->rescale($context, $items);
         };
-
         while ($items = $manager->iterate($cursor)) {
             $process->start($fcn, [$context, $items]);
         }
-
         $process->wait();
-
         $context->cache()->clear();
     }
-
     /**
      * Recreates the preview images for the given media items
      *
      * @param \Aimeos\MShop\ContextIface $context Context object
      * @param \Aimeos\Map $items List of media items implementing \Aimeos\MShop\Media\Item\Iface
      */
-    protected function rescale(\Aimeos\MShop\ContextIface $context, \Aimeos\Map $items)
+    protected function rescale(\Aimeos\M_Shop\Context_Iface $context, \Aimeos\Map $items)
     {
         $logger = $context->logger();
-        $manager = \Aimeos\MShop::create($context, 'media');
-
+        $manager = \Aimeos\M_Shop::create($context, 'media');
         /** controller/jobs/media/scale/force
          * Enforce rescaling all images
          *
@@ -199,12 +180,11 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          * @since 2019.10
          */
         $force = $context->config()->get('controller/jobs/media/scale/force', true);
-
         foreach ($items as $item) {
             try {
                 $manager->save($manager->scale($item, $force));
             } catch (\Exception $e) {
-                $msg = sprintf('Scaling media item "%1$s" failed: %2$s', $item->getId(), $e->getMessage());
+                $msg = sprintf('Scaling media item "%1$s" failed: %2$s', $item->get_id(), $e->get_message());
                 $logger->error($msg, 'media/scale');
             }
         }

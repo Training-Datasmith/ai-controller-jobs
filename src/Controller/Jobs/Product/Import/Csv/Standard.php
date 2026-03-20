@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2015-2026
  * @package Controller
  * @subpackage Jobs
  */
-
 namespace Aimeos\Controller\Jobs\Product\Import\Csv;
 
 /**
@@ -51,7 +49,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Base im
      * @param string Last part of the class name
      * @since 2015.01
      */
-
     /** controller/jobs/product/import/csv/decorators/excludes
      * Excludes decorators added by the "common" option from the product import CSV job controller
      *
@@ -76,7 +73,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Base im
      * @see controller/jobs/product/import/csv/decorators/global
      * @see controller/jobs/product/import/csv/decorators/local
      */
-
     /** controller/jobs/product/import/csv/decorators/global
      * Adds a list of globally available decorators only to the product import CSV job controller
      *
@@ -99,7 +95,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Base im
      * @see controller/jobs/product/import/csv/decorators/excludes
      * @see controller/jobs/product/import/csv/decorators/local
      */
-
     /** controller/jobs/product/import/csv/decorators/local
      * Adds a list of local decorators only to the product import CSV job controller
      *
@@ -124,29 +119,25 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Base im
      * @see controller/jobs/product/import/csv/decorators/excludes
      * @see controller/jobs/product/import/csv/decorators/global
      */
-
     private ?array $types = null;
-
     /**
      * Returns the localized name of the job.
      *
      * @return string Name of the job
      */
-    public function getName(): string
+    public function get_name(): string
     {
         return $this->context()->translate('controller/jobs', 'Product import CSV');
     }
-
     /**
      * Returns the localized description of the job.
      *
      * @return string Description of the job
      */
-    public function getDescription(): string
+    public function get_description(): string
     {
         return $this->context()->translate('controller/jobs', 'Imports new and updates existing products from CSV files');
     }
-
     /**
      * Executes the job.
      *
@@ -157,32 +148,26 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Base im
         $context = $this->context();
         $logger = $context->logger();
         $date = date('Y-m-d H:i:s');
-
         try {
             $files = $errors = 0;
             $fs = $context->fs('fs-import');
-            $site = $context->locale()->getSiteItem()->getCode();
+            $site = $context->locale()->get_site_item()->get_code();
             $location = $this->location() . '/' . $site;
-
-            if ($fs->isDir($location) === false) {
+            if ($fs->is_dir($location) === false) {
                 return;
             }
-
             $logger->info(sprintf('Started product import from "%1$s"', $location), 'import/csv/product');
-
             foreach (map($fs->scan($location))->sort() as $filename) {
                 $path = $location . '/' . $filename;
                 if ($filename[0] === '.') {
                     continue;
                 }
-                if ($fs instanceof \Aimeos\Base\Filesystem\DirIface && $fs->isDir($path)) {
+                if ($fs instanceof \Aimeos\Base\Filesystem\Dir_Iface && $fs->is_dir($path)) {
                     continue;
                 }
-
                 $errors = $this->import($path);
                 $files++;
             }
-
             /** controller/jobs/product/import/csv/cleanup
              * Deletes all products with categories which havn't been updated
              *
@@ -206,19 +191,16 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Base im
                 $count = $this->cleanup($date);
                 $logger->info(sprintf('Cleaned %1$s old products', $count), 'import/csv/product');
             }
-
             if ($errors > 0) {
                 $this->mail('Product CSV import', sprintf('Invalid product lines during import: %1$d', $errors));
             }
-
             $logger->info(sprintf('Finished product import from "%1$s"', $location), 'import/csv/product');
         } catch (\Exception $e) {
-            $logger->error('Product import error: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), 'import/csv/product');
-            $this->mail('Product CSV import error', $e->getMessage());
-            throw new \Aimeos\Controller\Jobs\Exception($e->getMessage());
+            $logger->error('Product import error: ' . $e->get_message() . "\n" . $e->get_trace_as_string(), 'import/csv/product');
+            $this->mail('Product CSV import error', $e->get_message());
+            throw new \Aimeos\Controller\Jobs\Exception($e->get_message());
         }
     }
-
     /**
      * Returns the directory for storing imported files
      *
@@ -256,29 +238,24 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Base im
         $backup = $this->context()->config()->get('controller/jobs/product/import/csv/backup');
         return \Aimeos\Base\Str::strtime((string) $backup);
     }
-
     /**
      * Checks the given product type for validity
      *
      * @param string|null $type Product type or null for no type
      * @return string New product type
      */
-    protected function checkType(?string $type = null): string
+    protected function check_type(?string $type = null): string
     {
         if (!isset($this->types)) {
             $this->types = [];
-
-            $manager = \Aimeos\MShop::create($this->context(), 'product/type');
+            $manager = \Aimeos\M_Shop::create($this->context(), 'product/type');
             $search = $manager->filter()->slice(0, 10000);
-
             foreach ($manager->search($search) as $item) {
-                $this->types[$item->getCode()] = $item->getCode();
+                $this->types[$item->get_code()] = $item->get_code();
             }
         }
-
-        return ($this->types[$type] ?? 'default');
+        return $this->types[$type] ?? 'default';
     }
-
     /**
      * Cleans up the given list of product items
      *
@@ -286,16 +263,12 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Base im
      */
     protected function clean(\Aimeos\Map $products)
     {
-        $articles = $products->filter(fn ($item): bool => $item->getType() === 'select')
-            ->getRefItems('product', null, 'default')->flat(1);
-
-        $manager = \Aimeos\MShop::create($this->context(), 'index');
-
+        $articles = $products->filter(fn($item): bool => $item->get_type() === 'select')->get_ref_items('product', null, 'default')->flat(1);
+        $manager = \Aimeos\M_Shop::create($this->context(), 'index');
         $manager->begin();
-        $manager->save($products->merge($articles)->setStatus(-2));
+        $manager->save($products->merge($articles)->set_status(-2));
         $manager->commit();
     }
-
     /**
      * Adds conditions to the filter for fetching products that should be removed
      *
@@ -306,7 +279,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Base im
     {
         return $filter->add($filter->make('product:has', ['catalog']), '!=', null);
     }
-
     /**
      * Removes all products which have been updated before the given date/time
      *
@@ -316,20 +288,16 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Base im
     protected function cleanup(string $datetime): int
     {
         $count = 0;
-        $manager = \Aimeos\MShop::create($this->context(), 'index');
-
+        $manager = \Aimeos\M_Shop::create($this->context(), 'index');
         $filter = $manager->filter();
         $filter->add('product.mtime', '<', $datetime);
         $cursor = $manager->cursor($this->call('cleaner', $filter));
-
         while ($items = $manager->iterate($cursor, ['product' => ['default']])) {
             $this->call('clean', $items);
             $count += count($items);
         }
-
         return $count;
     }
-
     /**
      * Returns the list of domain names that should be retrieved along with the attribute items
      *
@@ -357,7 +325,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Base im
          */
         return $this->context()->config()->get('controller/jobs/product/import/csv/domains', []);
     }
-
     /**
      * Returns the position of the "product.code" column from the product item mapping
      *
@@ -365,17 +332,15 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Base im
      * @return int Position of the "product.code" column
      * @throws \Aimeos\Controller\Jobs\Exception If no mapping for "product.code" is found
      */
-    protected function getCodePosition(array $mapping): int
+    protected function get_code_position(array $mapping): int
     {
         foreach ($mapping as $pos => $key) {
             if ($key === 'product.code') {
                 return $pos;
             }
         }
-
         throw new \Aimeos\Controller\Jobs\Exception(sprintf('No "product.code" column in CSV mapping found'));
     }
-
     /**
      * Returns the product items for the given codes
      *
@@ -383,14 +348,12 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Base im
      * @param array $domains List of domains whose items should be fetched too
      * @return \Aimeos\Map Associative list of product codes as key and product items as value
      */
-    protected function getProducts(array $codes, array $domains): \Aimeos\Map
+    protected function get_products(array $codes, array $domains): \Aimeos\Map
     {
-        $manager = \Aimeos\MShop::create($this->context(), 'index');
+        $manager = \Aimeos\M_Shop::create($this->context(), 'index');
         $search = $manager->filter()->add(['product.code' => $codes])->slice(0, count($codes));
-
         return $manager->search($search, $domains)->col(null, 'product.code');
     }
-
     /**
      * Imports the CSV file from the given path
      *
@@ -401,48 +364,36 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Base im
     {
         $context = $this->context();
         $logger = $context->logger();
-
         $logger->info(sprintf('Started product import from "%1$s"', $path), 'import/csv/product');
-
         $maxcnt = $this->max();
         $skiplines = $this->skip();
         $domains = $this->domains();
-
         $mappings = $this->mapping();
-        $processor = $this->getProcessors($mappings);
-        $codePos = $this->getCodePosition($mappings['item']);
-
+        $processor = $this->get_processors($mappings);
+        $code_pos = $this->get_code_position($mappings['item']);
         $fs = $context->fs('fs-import');
         $fh = $fs->reads($path);
         $total = $errors = 0;
-
         for ($i = 0; $i < $skiplines; $i++) {
             fgetcsv($fh, null, ',', '"', '');
         }
-
-        while (($data = $this->getData($fh, $maxcnt, $codePos)) !== []) {
-            $products = $this->getProducts(array_keys($data), $domains);
-            $errors += $this->importProducts($products, $data, $mappings['item'], [], $processor);
-
+        while (($data = $this->get_data($fh, $maxcnt, $code_pos)) !== []) {
+            $products = $this->get_products(array_keys($data), $domains);
+            $errors += $this->import_products($products, $data, $mappings['item'], [], $processor);
             $total += count($data);
             unset($products, $data);
         }
-
         $processor->finish();
         fclose($fh);
-
         if (!empty($backup = $this->backup())) {
             $fs->move($path, $backup);
         } else {
             $fs->rm($path);
         }
-
         $str = sprintf('Finished product import from "%1$s" (%2$d/%3$d)', $path, $errors, $total);
         $logger->info($str, 'import/csv/product');
-
         return $errors;
     }
-
     /**
      * Imports the CSV data and creates new products or updates existing ones
      *
@@ -454,53 +405,37 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Base im
      * @return int Number of products that couldn't be imported
      * @throws \Aimeos\Controller\Jobs\Exception
      */
-    protected function importProducts(
-        \Aimeos\Map $products,
-        array $data,
-        array $mapping,
-        array $types,
-        \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Iface $processor
-    ): int {
+    protected function import_products(\Aimeos\Map $products, array $data, array $mapping, array $types, \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Iface $processor): int
+    {
         $errors = 0;
         $context = $this->context();
-        $manager = \Aimeos\MShop::create($context, 'index');
-
+        $manager = \Aimeos\M_Shop::create($context, 'index');
         foreach ($data as $code => $list) {
             $manager->begin();
-
             try {
                 $code = trim($code);
                 $product = $products[$code] ?? $manager->create();
-                $map = current($this->getMappedChunk($list, $mapping)); // there can only be one chunk for the base product data
-
+                $map = current($this->get_mapped_chunk($list, $mapping));
+                // there can only be one chunk for the base product data
                 if ($map) {
-                    $type = $this->checkType($this->val($map, 'product.type', $product->getType()));
-
+                    $type = $this->check_type($this->val($map, 'product.type', $product->get_type()));
                     if ($config = $this->val($map, 'product.config')) {
                         $map['product.config'] = json_decode($config) ?: [];
                     }
-
-                    $product = $manager->save($product->fromArray($map, true)->setType($type));
-
+                    $product = $manager->save($product->from_array($map, true)->set_type($type));
                     $processor->process($product, $list);
-
                     $manager->save($product);
                 }
-
                 $manager->commit();
             } catch (\Throwable $t) {
                 $manager->rollback();
-
-                $msg = sprintf('Unable to import product with code "%1$s": %2$s', $code, $t->getMessage());
+                $msg = sprintf('Unable to import product with code "%1$s": %2$s', $code, $t->get_message());
                 $context->logger()->error($msg, 'import/csv/product');
-
                 $errors++;
             }
         }
-
         return $errors;
     }
-
     /**
      * Returns the path to the directory with the CSV file
      *
@@ -529,7 +464,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Base im
          */
         return (string) $this->context()->config()->get('controller/jobs/product/import/csv/location', 'product');
     }
-
     /**
      * Returns the CSV column mapping
      *
@@ -561,16 +495,13 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Base im
          * @see controller/jobs/product/import/csv/max-size
          * @see controller/jobs/product/import/csv/skip-lines
          */
-        $map = (array) $this->context()->config()->get('controller/jobs/product/import/csv/mapping', $this->getDefaultMapping());
-
+        $map = (array) $this->context()->config()->get('controller/jobs/product/import/csv/mapping', $this->get_default_mapping());
         if (!isset($map['item']) || !is_array($map['item'])) {
             $msg = sprintf('Required mapping key "%1$s" is missing or contains no array', 'item');
             throw new \Aimeos\Controller\Jobs\Exception($msg);
         }
-
         return $map;
     }
-
     /**
      * Returns the maximum number of CSV rows to import at once
      *
@@ -599,7 +530,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Base im
          */
         return (int) $this->context()->config()->get('controller/jobs/product/import/csv/max-size', 1000);
     }
-
     /**
      * Returns the number of rows skipped in front of each CSV files
      *

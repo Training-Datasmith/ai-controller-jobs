@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2015-2026
  * @package Controller
  * @subpackage Common
  */
-
 namespace Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Text;
 
 /**
@@ -28,10 +26,8 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Process
      * @param string Last part of the processor class name
      * @since 2015.10
      */
-
-    private ?array $listTypes = null;
+    private ?array $list_types = null;
     private array $types = [];
-
     /**
      * Initializes the object
      *
@@ -39,15 +35,10 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Process
      * @param array $mapping Associative list of field position in CSV as key and domain item key as value
      * @param \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Iface $object Decorated processor
      */
-    public function __construct(
-        \Aimeos\MShop\ContextIface $context,
-        array $mapping,
-        ?\Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Iface $object = null
-    ) {
+    public function __construct(\Aimeos\M_Shop\Context_Iface $context, array $mapping, ?\Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Iface $object = null)
+    {
         parent::__construct($context, $mapping, $object);
-
         $config = $context->config();
-
         /** controller/jobs/product/import/csv/text/listtypes
          * Names of the product list types for texts that are updated or removed
          *
@@ -68,28 +59,23 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Process
          * @see controller/jobs/product/import/csv/supplier/listtypes
          */
         $default = $config->get('controller/jobs/product/import/csv/processor/text/listtypes');
-        $this->listTypes = $config->get('controller/jobs/product/import/csv/text/listtypes', $default);
-
-        if ($this->listTypes === null) {
-            $this->listTypes = [];
-            $manager = \Aimeos\MShop::create($context, 'product/lists/type');
+        $this->list_types = $config->get('controller/jobs/product/import/csv/text/listtypes', $default);
+        if ($this->list_types === null) {
+            $this->list_types = [];
+            $manager = \Aimeos\M_Shop::create($context, 'product/lists/type');
             $search = $manager->filter()->slice(0, 0x7fffffff);
-
             foreach ($manager->search($search) as $item) {
-                $this->listTypes[$item->getCode()] = $item->getCode();
+                $this->list_types[$item->get_code()] = $item->get_code();
             }
         } else {
-            $this->listTypes = array_combine($this->listTypes, $this->listTypes);
+            $this->list_types = array_combine($this->list_types, $this->list_types);
         }
-
-        $manager = \Aimeos\MShop::create($context, 'text/type');
+        $manager = \Aimeos\M_Shop::create($context, 'text/type');
         $search = $manager->filter()->slice(0, 0x7fffffff);
-
         foreach ($manager->search($search) as $item) {
-            $this->types[$item->getCode()] = $item->getCode();
+            $this->types[$item->get_code()] = $item->get_code();
         }
     }
-
     /**
      * Saves the product related data to the storage
      *
@@ -97,84 +83,67 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Process
      * @param array $data List of CSV fields with position as key and data as value
      * @return array List of data which hasn't been imported
      */
-    public function process(\Aimeos\MShop\Product\Item\Iface $product, array $data): array
+    public function process(\Aimeos\M_Shop\Product\Item\Iface $product, array $data): array
     {
         $context = $this->context();
-        $manager = \Aimeos\MShop::create($context, 'product');
-        $refManager = \Aimeos\MShop::create($context, 'text');
-
+        $manager = \Aimeos\M_Shop::create($context, 'product');
+        $ref_manager = \Aimeos\M_Shop::create($context, 'text');
         $pos = 0;
-        $listMap = [];
-        $map = $this->getMappedChunk($data, $this->getMapping());
-        $listItems = $product->getListItems('text', $this->listTypes, null, false);
-
-        foreach ($listItems as $listItem) {
-            if (($refItem = $listItem->getRefItem()) !== null) {
-                $listMap[$refItem->getContent()][$refItem->getLanguageId()][$refItem->getType()][$listItem->getType()] = $listItem;
+        $list_map = [];
+        $map = $this->get_mapped_chunk($data, $this->get_mapping());
+        $list_items = $product->get_list_items('text', $this->list_types, null, false);
+        foreach ($list_items as $list_item) {
+            if (($ref_item = $list_item->get_ref_item()) !== null) {
+                $list_map[$ref_item->get_content()][$ref_item->get_language_id()][$ref_item->get_type()][$list_item->get_type()] = $list_item;
             }
         }
-
         foreach ($map as $list) {
-            if ($this->checkEntry($list) === false) {
+            if ($this->check_entry($list) === false) {
                 continue;
             }
-
             $listtype = trim($this->val($list, 'product.lists.type', 'default'));
-            $listConfig = $this->getListConfig(trim($this->val($list, 'product.lists.config', '')));
-
+            $list_config = $this->get_list_config(trim($this->val($list, 'product.lists.config', '')));
             unset($list['product.lists.config']);
-
             $language = trim($this->val($list, 'text.languageid', ''));
             $content = trim($this->val($list, 'text.content', ''));
             $type = trim($this->val($list, 'text.type', 'name'));
-
-            $this->addType('product/lists/type', 'text', $listtype);
-            $this->addType('text/type', 'product', $type);
-
-            if (isset($listMap[$content][$language][$type][$listtype])) {
-                $listItem = $listMap[$content][$language][$type][$listtype];
-                $refItem = $listItem->getRefItem();
-                unset($listItems[$listItem->getId()]);
+            $this->add_type('product/lists/type', 'text', $listtype);
+            $this->add_type('text/type', 'product', $type);
+            if (isset($list_map[$content][$language][$type][$listtype])) {
+                $list_item = $list_map[$content][$language][$type][$listtype];
+                $ref_item = $list_item->get_ref_item();
+                unset($list_items[$list_item->get_id()]);
             } else {
-                $listItem = $manager->createListItem()->setType($listtype);
-                $refItem = $refManager->create()->setType($type);
+                $list_item = $manager->create_list_item()->set_type($listtype);
+                $ref_item = $ref_manager->create()->set_type($type);
             }
-
-            $listItem = $listItem->setPosition($pos++)->fromArray($list)->setConfig($listConfig);
-
+            $list_item = $list_item->set_position($pos++)->from_array($list)->set_config($list_config);
             $label = mb_strcut(strip_tags(trim($this->val($list, 'text.content', ''))), 0, 255);
-            $refItem = $refItem->setLabel($label)->fromArray($list);
-
-            $product->addListItem('text', $listItem, $refItem);
+            $ref_item = $ref_item->set_label($label)->from_array($list);
+            $product->add_list_item('text', $list_item, $ref_item);
         }
-
-        $product->deleteListItems($listItems->toArray(), true);
-
+        $product->delete_list_items($list_items->to_array(), true);
         return $this->object()->process($product, $data);
     }
-
     /**
      * Checks if an entry can be used for updating a text item
      *
      * @param array $list Associative list of key/value pairs from the mapping
      * @return bool True if valid, false if not
      */
-    protected function checkEntry(array $list): bool
+    protected function check_entry(array $list): bool
     {
         if ($this->val($list, 'text.content') === null) {
             return false;
         }
-
-        if (($type = trim($this->val($list, 'product.lists.type', 'default'))) && !isset($this->listTypes[$type])) {
+        if (($type = trim($this->val($list, 'product.lists.type', 'default'))) && !isset($this->list_types[$type])) {
             $msg = sprintf('Invalid type "%1$s" (%2$s)', $type, 'product list');
             throw new \Aimeos\Controller\Jobs\Exception($msg);
         }
-
         if (($type = trim($this->val($list, 'text.type', 'name'))) && !isset($this->types[$type])) {
             $msg = sprintf('Invalid type "%1$s" (%2$s)', $type, 'text');
             throw new \Aimeos\Controller\Jobs\Exception($msg);
         }
-
         return true;
     }
 }

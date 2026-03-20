@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, https://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2015-2026
  * @package Controller
  * @subpackage Jobs
  */
-
 namespace Aimeos\Controller\Jobs\Common\Decorator;
 
 /**
@@ -26,14 +24,10 @@ abstract class Base extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Cont
      * @param \Aimeos\MShop\ContextIface $context Context object with required objects
      * @param \Aimeos\Bootstrap $aimeos \Aimeos\Bootstrap object
      */
-    public function __construct(
-        private \Aimeos\Controller\Jobs\Iface $controller,
-        \Aimeos\MShop\ContextIface $context,
-        \Aimeos\Bootstrap $aimeos
-    ) {
+    public function __construct(private \Aimeos\Controller\Jobs\Iface $controller, \Aimeos\M_Shop\Context_Iface $context, \Aimeos\Bootstrap $aimeos)
+    {
         parent::__construct($context, $aimeos);
     }
-
     /**
      * Passes unknown methods to wrapped objects.
      *
@@ -44,29 +38,26 @@ abstract class Base extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Cont
      */
     public function __call(string $name, array $param)
     {
-        return call_user_func_array([ $this->controller, $name ], $param);
+        return call_user_func_array([$this->controller, $name], $param);
     }
-
     /**
      * Returns the localized name of the job.
      *
      * @return string Name of the job
      */
-    public function getName(): string
+    public function get_name(): string
     {
-        return $this->controller->getName();
+        return $this->controller->get_name();
     }
-
     /**
      * Returns the localized description of the job.
      *
      * @return string Description of the job
      */
-    public function getDescription(): string
+    public function get_description(): string
     {
-        return $this->controller->getDescription();
+        return $this->controller->get_description();
     }
-
     /**
      * Executes the job.
      *
@@ -76,13 +67,12 @@ abstract class Base extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Cont
     {
         $this->controller->run();
     }
-
     /**
      * Returns the job controller
      *
      * @return \Aimeos\Controller\Jobs\Iface Job controller object
      */
-    protected function getController(): \Aimeos\Controller\Jobs\Iface
+    protected function get_controller(): \Aimeos\Controller\Jobs\Iface
     {
         return $this->controller;
     }

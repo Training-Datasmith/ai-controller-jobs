@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @copyright Metaways Infosystems GmbH, 2013
  * @license LGPLv3, https://opensource.org/licenses/LGPL-3.0
@@ -9,7 +8,6 @@ declare(strict_types=1);
  * @package Controller
  * @subpackage Jobs
  */
-
 namespace Aimeos\Controller\Jobs;
 
 /**
@@ -21,22 +19,19 @@ namespace Aimeos\Controller\Jobs;
 abstract class Base implements \Aimeos\Macro\Iface
 {
     use \Aimeos\Macro\Macroable;
-
     private \Aimeos\Bootstrap $aimeos;
-    private \Aimeos\MShop\ContextIface $context;
-
+    private \Aimeos\M_Shop\Context_Iface $context;
     /**
      * Initializes the object.
      *
      * @param \Aimeos\MShop\ContextIface $context MShop context object
      * @param \Aimeos\Bootstrap $aimeos \Aimeos\Bootstrap main object
      */
-    public function __construct(\Aimeos\MShop\ContextIface $context, \Aimeos\Bootstrap $aimeos)
+    public function __construct(\Aimeos\M_Shop\Context_Iface $context, \Aimeos\Bootstrap $aimeos)
     {
         $this->context = $context;
         $this->aimeos = $aimeos;
     }
-
     /**
      * Catch unknown methods
      *
@@ -48,27 +43,24 @@ abstract class Base implements \Aimeos\Macro\Iface
     {
         throw new \Aimeos\Controller\Jobs\Exception(sprintf('Unable to call method "%1$s"', $name));
     }
-
     /**
      * Returns the context object.
      *
      * @return \Aimeos\MShop\ContextIface Context object
      */
-    protected function context(): \Aimeos\MShop\ContextIface
+    protected function context(): \Aimeos\M_Shop\Context_Iface
     {
         return $this->context;
     }
-
     /**
      * Returns the \Aimeos\Bootstrap object.
      *
      * @return \Aimeos\Bootstrap \Aimeos\Bootstrap object
      */
-    protected function getAimeos(): \Aimeos\Bootstrap
+    protected function get_aimeos(): \Aimeos\Bootstrap
     {
         return $this->aimeos;
     }
-
     /**
      * Returns the value from the list or the default value
      *
@@ -81,7 +73,6 @@ abstract class Base implements \Aimeos\Macro\Iface
     {
         return isset($list[$key]) && ($value = trim($list[$key])) !== '' ? $value : $default;
     }
-
     /**
      * Sends a mail with the given data to the configured e-mails
      *
@@ -92,7 +83,6 @@ abstract class Base implements \Aimeos\Macro\Iface
     protected function mail(string $subject, string $body): self
     {
         $config = $this->context->config();
-
         /** resource/email/from-name
          * Name of the e-mail sender
          *
@@ -102,7 +92,6 @@ abstract class Base implements \Aimeos\Macro\Iface
          * @see resource/email/from-email
          */
         $name = $config->get('resource/email/from-name');
-
         /** resource/email/from-email
          * E-Mail address of the sender
          *
@@ -112,7 +101,6 @@ abstract class Base implements \Aimeos\Macro\Iface
          * @see resource/email/from-name
          */
         $email = $config->get('resource/email/from-email');
-
         /** controller/jobs/to-email
          * Recipient e-mail address used when sending job e-mails
          *
@@ -127,13 +115,10 @@ abstract class Base implements \Aimeos\Macro\Iface
         if (($to = $config->get('controller/jobs/to-email', $email)) == null) {
             return $this;
         }
-
         $message = $this->context->mail()->create();
-
         foreach ((array) $to as $addr) {
             $message->to($addr);
         }
-
         /** controller/jobs/from-email
          * Sender e-mail address used when sending job e-mails
          *
@@ -148,9 +133,7 @@ abstract class Base implements \Aimeos\Macro\Iface
         if ($from = $config->get('controller/jobs/from-email', $email)) {
             $message->from($from, $name);
         }
-
         $message->subject($subject)->text($body)->send();
-
         return $this;
     }
 }

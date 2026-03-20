@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2015-2026
  * @package Controller
  * @subpackage Common
  */
-
 namespace Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Media;
 
 /**
@@ -28,11 +26,9 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Process
      * @param string Last part of the processor class name
      * @since 2015.10
      */
-
-    private ?array $listTypes = null;
+    private ?array $list_types = null;
     private array $types = [];
     private array $mimes = [];
-
     /**
      * Initializes the object
      *
@@ -40,16 +36,11 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Process
      * @param array $mapping Associative list of field position in CSV as key and domain item key as value
      * @param \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Iface $object Decorated processor
      */
-    public function __construct(
-        \Aimeos\MShop\ContextIface $context,
-        array $mapping,
-        ?\Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Iface $object = null
-    ) {
+    public function __construct(\Aimeos\M_Shop\Context_Iface $context, array $mapping, ?\Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Iface $object = null)
+    {
         parent::__construct($context, $mapping, $object);
-
         $config = $context->config();
         $this->mimes = array_flip($config->get('mshop/media/manager/extensions', []));
-
         /** controller/jobs/product/import/csv/media/listtypes
          * Names of the product list types for media that are updated or removed
          *
@@ -70,28 +61,23 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Process
          * @see controller/jobs/product/import/csv/text/listtypes
          */
         $default = $config->get('controller/jobs/product/import/csv/processor/media/listtypes');
-        $this->listTypes = $config->get('controller/jobs/product/import/csv/media/listtypes', $default);
-
-        if ($this->listTypes === null) {
-            $this->listTypes = [];
-            $manager = \Aimeos\MShop::create($context, 'product/lists/type');
+        $this->list_types = $config->get('controller/jobs/product/import/csv/media/listtypes', $default);
+        if ($this->list_types === null) {
+            $this->list_types = [];
+            $manager = \Aimeos\M_Shop::create($context, 'product/lists/type');
             $search = $manager->filter()->slice(0, 0x7fffffff);
-
             foreach ($manager->search($search) as $item) {
-                $this->listTypes[$item->getCode()] = $item->getCode();
+                $this->list_types[$item->get_code()] = $item->get_code();
             }
         } else {
-            $this->listTypes = array_combine($this->listTypes, $this->listTypes);
+            $this->list_types = array_combine($this->list_types, $this->list_types);
         }
-
-        $manager = \Aimeos\MShop::create($context, 'media/type');
+        $manager = \Aimeos\M_Shop::create($context, 'media/type');
         $search = $manager->filter()->slice(0, 0x7fffffff);
-
         foreach ($manager->search($search) as $item) {
-            $this->types[$item->getCode()] = $item->getCode();
+            $this->types[$item->get_code()] = $item->get_code();
         }
     }
-
     /**
      * Saves the product related data to the storage
      *
@@ -99,97 +85,78 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Process
      * @param array $data List of CSV fields with position as key and data as value
      * @return array List of data which hasn't been imported
      */
-    public function process(\Aimeos\MShop\Product\Item\Iface $product, array $data): array
+    public function process(\Aimeos\M_Shop\Product\Item\Iface $product, array $data): array
     {
         $context = $this->context();
-        $manager = \Aimeos\MShop::create($context, 'product');
-        $refManager = \Aimeos\MShop::create($context, 'media');
+        $manager = \Aimeos\M_Shop::create($context, 'product');
+        $ref_manager = \Aimeos\M_Shop::create($context, 'media');
         $separator = $context->config()->get('controller/jobs/product/import/csv/separator', "\n");
-
         $pos = 0;
-        $listMap = [];
-        $map = $this->getMappedChunk($data, $this->getMapping());
-        $listItems = $product->getListItems('media', $this->listTypes, null, false);
-
-        foreach ($listItems as $listItem) {
-            if (($refItem = $listItem->getRefItem()) !== null) {
-                $listMap[$refItem->getUrl()][$refItem->getType()][$refItem->getLanguageId()][$listItem->getType()] = $listItem;
+        $list_map = [];
+        $map = $this->get_mapped_chunk($data, $this->get_mapping());
+        $list_items = $product->get_list_items('media', $this->list_types, null, false);
+        foreach ($list_items as $list_item) {
+            if (($ref_item = $list_item->get_ref_item()) !== null) {
+                $list_map[$ref_item->get_url()][$ref_item->get_type()][$ref_item->get_language_id()][$list_item->get_type()] = $list_item;
             }
         }
-
         foreach ($map as $list) {
-            if ($this->checkEntry($list) === false) {
+            if ($this->check_entry($list) === false) {
                 continue;
             }
-
             $type = trim($this->val($list, 'media.type', 'default'));
-            $langId = trim($this->val($list, 'media.languageid', ''));
+            $lang_id = trim($this->val($list, 'media.languageid', ''));
             $listtype = trim($this->val($list, 'product.lists.type', 'default'));
-            $listConfig = $this->getListConfig(trim($this->val($list, 'product.lists.config', '')));
-
+            $list_config = $this->get_list_config(trim($this->val($list, 'product.lists.config', '')));
             unset($list['product.lists.config']);
-
             $urls = explode($separator, trim($this->val($list, 'media.url', '')));
             unset($list['media.url']);
-
-            $this->addType('product/lists/type', 'media', $listtype);
-            $this->addType('media/type', 'product', $type);
-
+            $this->add_type('product/lists/type', 'media', $listtype);
+            $this->add_type('media/type', 'product', $type);
             foreach ($urls as $url) {
                 $url = trim($url);
-
-                if (isset($listMap[$url][$type][$langId][$listtype])) {
-                    $listItem = $listMap[$url][$type][$langId][$listtype];
-                    $refItem = $listItem->getRefItem();
-                    unset($listItems[$listItem->getId()]);
+                if (isset($list_map[$url][$type][$lang_id][$listtype])) {
+                    $list_item = $list_map[$url][$type][$lang_id][$listtype];
+                    $ref_item = $list_item->get_ref_item();
+                    unset($list_items[$list_item->get_id()]);
                 } else {
-                    $listItem = $manager->createListItem()->setType($listtype);
-                    $refItem = $refManager->create()->setType($type);
+                    $list_item = $manager->create_list_item()->set_type($listtype);
+                    $ref_item = $ref_manager->create()->set_type($type);
                 }
-
                 $ext = strtolower(pathinfo($url, PATHINFO_EXTENSION));
                 if (isset($this->mimes[$ext])) {
-                    $refItem->setMimeType($this->mimes[$ext]);
+                    $ref_item->set_mime_type($this->mimes[$ext]);
                 }
-
-                $refItem->setDomain('product');
-                $refItem = $this->update($refItem, $list, $url);
-                $listItem = $listItem->setPosition($pos++)->fromArray($list)->setConfig($listConfig);
-
-                $product->addListItem('media', $listItem, $refItem);
+                $ref_item->set_domain('product');
+                $ref_item = $this->update($ref_item, $list, $url);
+                $list_item = $list_item->set_position($pos++)->from_array($list)->set_config($list_config);
+                $product->add_list_item('media', $list_item, $ref_item);
             }
         }
-
-        $product->deleteListItems($listItems->toArray(), true);
-
+        $product->delete_list_items($list_items->to_array(), true);
         return $this->object()->process($product, $data);
     }
-
     /**
      * Checks if an entry can be used for updating a media item
      *
      * @param array $list Associative list of key/value pairs from the mapping
      * @return bool True if valid, false if not
      */
-    protected function checkEntry(array $list): bool
+    protected function check_entry(array $list): bool
     {
         if ($this->val($list, 'media.url') === null) {
             return false;
         }
-
-        if (($type = trim($this->val($list, 'product.lists.type', 'default'))) && !isset($this->listTypes[$type])) {
+        if (($type = trim($this->val($list, 'product.lists.type', 'default'))) && !isset($this->list_types[$type])) {
             $msg = sprintf('Invalid type "%1$s" (%2$s)', $type, 'product list');
             throw new \Aimeos\Controller\Jobs\Exception($msg);
         }
-
         if (($type = trim($this->val($list, 'media.type', 'default'))) && !isset($this->types[$type])) {
             $msg = sprintf('Invalid type "%1$s" (%2$s)', $type, 'media');
             throw new \Aimeos\Controller\Jobs\Exception($msg);
         }
-
         return true;
     }
-
     /**
      * Updates the media item with the given key/value pairs
      *
@@ -197,25 +164,23 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Process
      * @param array &$list Associative list of key/value pairs, matching pairs are removed
      * @return \Aimeos\MShop\Media\Item\Iface Updated media item
      */
-    protected function update(\Aimeos\MShop\Media\Item\Iface $refItem, array &$list, string $url): \Aimeos\MShop\Media\Item\Iface
+    protected function update(\Aimeos\M_Shop\Media\Item\Iface $ref_item, array &$list, string $url): \Aimeos\M_Shop\Media\Item\Iface
     {
         try {
             if (isset($list['media.previews']) && ($map = json_decode($list['media.previews'], true)) !== null) {
-                $refItem->setPreviews($map)->setUrl($url);
+                $ref_item->set_previews($map)->set_url($url);
             } elseif (isset($list['media.preview'])) {
-                $refItem->setPreview($list['media.preview'])->setUrl($url);
-            } elseif ($refItem->getUrl() !== $url) {
-                $refItem = \Aimeos\MShop::create($this->context(), 'media')->scale($refItem->setUrl($url), true);
+                $ref_item->set_preview($list['media.preview'])->set_url($url);
+            } elseif ($ref_item->get_url() !== $url) {
+                $ref_item = \Aimeos\M_Shop::create($this->context(), 'media')->scale($ref_item->set_url($url), true);
             } else {
-                $refItem = \Aimeos\MShop::create($this->context(), 'media')->scale($refItem->setUrl($url));
+                $ref_item = \Aimeos\M_Shop::create($this->context(), 'media')->scale($ref_item->set_url($url));
             }
-
             unset($list['media.previews'], $list['media.preview']);
         } catch (\Exception $e) {
-            $msg = sprintf('Scaling image "%1$s" failed: %2$s', $url, $e->getMessage());
+            $msg = sprintf('Scaling image "%1$s" failed: %2$s', $url, $e->get_message());
             $this->context()->logger()->error($msg, 'import/csv/product');
         }
-
-        return $refItem->fromArray($list);
+        return $ref_item->from_array($list);
     }
 }

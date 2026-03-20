@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org)2023-2026
  * @package Controller
  * @subpackage Jobs
  */
-
 namespace Aimeos\Controller\Jobs\Basket\Cleanup;
 
 /**
@@ -51,7 +49,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param string Last part of the class name
      * @since 2023.10
      */
-
     /** controller/jobs/basket/cleanup/decorators/excludes
      * Excludes decorators added by the "common" option from the basket cleanup controllers
      *
@@ -76,7 +73,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/basket/cleanup/decorators/global
      * @see controller/jobs/basket/cleanup/decorators/local
      */
-
     /** controller/jobs/basket/cleanup/decorators/global
      * Adds a list of globally available decorators only to the basket cleanup controllers
      *
@@ -99,7 +95,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/basket/cleanup/decorators/excludes
      * @see controller/jobs/basket/cleanup/decorators/local
      */
-
     /** controller/jobs/basket/cleanup/decorators/local
      * Adds a list of local decorators only to the basket cleanup controllers
      *
@@ -123,27 +118,24 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/basket/cleanup/decorators/excludes
      * @see controller/jobs/basket/cleanup/decorators/global
      */
-
     /**
      * Returns the localized name of the job.
      *
      * @return string Name of the job
      */
-    public function getName(): string
+    public function get_name(): string
     {
         return $this->context()->translate('controller/jobs', 'Cleanup baskets');
     }
-
     /**
      * Returns the localized description of the job.
      *
      * @return string Description of the job
      */
-    public function getDescription(): string
+    public function get_description(): string
     {
         return $this->context()->translate('controller/jobs', 'Removes the old baskets from the database');
     }
-
     /**
      * Executes the job.
      *
@@ -151,16 +143,13 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      */
     public function run(): void
     {
-        $manager = \Aimeos\MShop::create($this->context(), 'basket');
-        $filter = $manager->filter()->add('basket.mtime', '<=', $this->timestamp())
-            ->add('basket.name', '==', '')->slice(0, 1000);
+        $manager = \Aimeos\M_Shop::create($this->context(), 'basket');
+        $filter = $manager->filter()->add('basket.mtime', '<=', $this->timestamp())->add('basket.name', '==', '')->slice(0, 1000);
         $cursor = $manager->cursor($filter);
-
         while ($items = $manager->iterate($cursor)) {
             $manager->delete($items);
         }
     }
-
     /**
      * Returns the timestamp until the logs entries should be moved
      *

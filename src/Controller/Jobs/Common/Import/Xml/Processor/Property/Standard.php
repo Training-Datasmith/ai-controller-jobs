@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2019-2026
  * @package Controller
  * @subpackage Common
  */
-
 namespace Aimeos\Controller\Jobs\Common\Import\Xml\Processor\Property;
 
 /**
@@ -28,7 +26,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Import\Xml\Processor\Base 
      * @param string Last part of the processor class name
      * @since 2019.04
      */
-
     /**
      * Updates the given item using the data from the DOM node
      *
@@ -36,41 +33,32 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Import\Xml\Processor\Base 
      * @param \DOMNode $node XML document node containing a list of nodes to process
      * @return \Aimeos\MShop\Common\Item\Iface Updated item
      */
-    public function process(\Aimeos\MShop\Common\Item\Iface $item, \DOMNode $node): \Aimeos\MShop\Common\Item\Iface
+    public function process(\Aimeos\M_Shop\Common\Item\Iface $item, \Dom_Node $node): \Aimeos\M_Shop\Common\Item\Iface
     {
-        \Aimeos\Utils::implements($item, \Aimeos\MShop\Common\Item\PropertyRef\Iface::class);
-
-        $resource = $item->getResourceType();
-        $manager = \Aimeos\MShop::create($this->context(), $resource);
-        $propItems = $item->getPropertyItems(null, false);
+        \Aimeos\Utils::implements($item, \Aimeos\M_Shop\Common\Item\Property_Ref\Iface::class);
+        $resource = $item->get_resource_type();
+        $manager = \Aimeos\M_Shop::create($this->context(), $resource);
+        $prop_items = $item->get_property_items(null, false);
         $map = [];
-
-        foreach ($propItems as $propItem) {
-            $map[$propItem->getType()][$propItem->getLanguageId()][$propItem->getValue()] = $propItem->getId();
+        foreach ($prop_items as $prop_item) {
+            $map[$prop_item->get_type()][$prop_item->get_language_id()][$prop_item->get_value()] = $prop_item->get_id();
         }
-
-        foreach ($node->childNodes as $propNode) {
-            if ($propNode->nodeName !== 'propertyitem') {
+        foreach ($node->child_nodes as $prop_node) {
+            if ($prop_node->node_name !== 'propertyitem') {
                 continue;
             }
-
             $list = [];
-
-            foreach ($propNode->childNodes as $tagNode) {
-                $list[$tagNode->nodeName] = \Aimeos\Base\Str::decode($tagNode->nodeValue);
+            foreach ($prop_node->child_nodes as $tag_node) {
+                $list[$tag_node->node_name] = \Aimeos\Base\Str::decode($tag_node->node_value);
             }
-
-            $propItem = $manager->createPropertyItem()->fromArray($list);
-
-            if (isset($map[$propItem->getType()][$propItem->getLanguageId()][$propItem->getValue()])) {
-                $propItems->remove($map[$propItem->getType()][$propItem->getLanguageId()][$propItem->getValue()]);
+            $prop_item = $manager->create_property_item()->from_array($list);
+            if (isset($map[$prop_item->get_type()][$prop_item->get_language_id()][$prop_item->get_value()])) {
+                $prop_items->remove($map[$prop_item->get_type()][$prop_item->get_language_id()][$prop_item->get_value()]);
             } else {
-                $item->addPropertyItem($propItem);
+                $item->add_property_item($prop_item);
             }
-
-            $this->addType($resource . '/property/type', 'product', $propItem->getType());
+            $this->add_type($resource . '/property/type', 'product', $prop_item->get_type());
         }
-
-        return $item->deletePropertyItems($propItems->toArray());
+        return $item->delete_property_items($prop_items->to_array());
     }
 }

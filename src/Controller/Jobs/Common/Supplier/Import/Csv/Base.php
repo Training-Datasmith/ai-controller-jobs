@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2018-2026
  * @package Controller
  * @subpackage Common
  */
-
 namespace Aimeos\Controller\Jobs\Common\Supplier\Import\Csv;
 
 /**
@@ -27,27 +25,21 @@ class Base extends \Aimeos\Controller\Jobs\Base
      * @return \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Cache\Iface Cache object
      * @throws \LogicException If class can't be instantiated
      */
-    protected function getCache(string $type, $name = null): \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Cache\Iface
+    protected function get_cache(string $type, $name = null): \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Cache\Iface
     {
         $context = $this->context();
         $config = $context->config();
-
         if (ctype_alnum($type) === false) {
             throw new \LogicException(sprintf('Invalid characters in class name "%1$s"', $type), 400);
         }
-
         $name = $name ?: $config->get('controller/jobs/supplier/import/csv/cache/' . $type . '/name', 'Standard');
-
         if (ctype_alnum($name) === false) {
             throw new \LogicException(sprintf('Invalid characters in class name "%1$s"', $name), 400);
         }
-
-        $classname = '\\Aimeos\\Controller\\Jobs\\Common\\Supplier\\Import\\Csv\\Cache\\' . ucfirst($type) . '\\' . $name;
+        $classname = '\Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Cache\\' . ucfirst($type) . '\\' . $name;
         $interface = \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Cache\Iface::class;
-
         return \Aimeos\Utils::create($classname, [$context], $interface);
     }
-
     /**
      * Returns the rows from the CSV file up to the maximum count
      *
@@ -56,18 +48,15 @@ class Base extends \Aimeos\Controller\Jobs\Base
      * @param int $codePos Column position which contains the unique product code (starting from 0)
      * @return array List of arrays with product codes as keys and list of values from the CSV file
      */
-    protected function getData($fh, int $maxcnt, int $codePos): array
+    protected function get_data($fh, int $maxcnt, int $code_pos): array
     {
         $count = 0;
         $data = [];
-
         while ($count++ < $maxcnt && ($row = fgetcsv($fh, null, ',', '"', '')) && $row !== [null]) {
-            $data[$row[$codePos]] = $row;
+            $data[$row[$code_pos]] = $row;
         }
-
         return $data;
     }
-
     /**
      * Returns the default mapping for the CSV fields to the domain item keys
      *
@@ -93,31 +82,10 @@ class Base extends \Aimeos\Controller\Jobs\Base
      * @return array Associative list of domains as keys ("item" is special for the supplier itself) and a list of
      *    positions and the domain item keys as values.
      */
-    protected function getDefaultMapping(): array
+    protected function get_default_mapping(): array
     {
-        return [
-            'item' => [
-                0 => 'supplier.code',
-                1 => 'supplier.label',
-                2 => 'supplier.status',
-            ],
-            'text' => [
-                3 => 'text.languageid',
-                4 => 'text.type',
-                5 => 'text.content',
-            ],
-            'media' => [
-                6 => 'media.type',
-                7 => 'media.url',
-            ],
-            'address' => [
-                8 => 'supplier.address.languageid',
-                9 => 'supplier.address.countryid',
-                10 => 'supplier.address.city',
-            ],
-        ];
+        return ['item' => [0 => 'supplier.code', 1 => 'supplier.label', 2 => 'supplier.status'], 'text' => [3 => 'text.languageid', 4 => 'text.type', 5 => 'text.content'], 'media' => [6 => 'media.type', 7 => 'media.url'], 'address' => [8 => 'supplier.address.languageid', 9 => 'supplier.address.countryid', 10 => 'supplier.address.city']];
     }
-
     /**
      * Returns the mapped data from the CSV line
      *
@@ -125,18 +93,15 @@ class Base extends \Aimeos\Controller\Jobs\Base
      * @param array $mapping List of domain item keys with the CSV field position as key
      * @return array List of associative arrays containing the chunked properties
      */
-    protected function getMappedChunk(array &$data, array $mapping): array
+    protected function get_mapped_chunk(array &$data, array $mapping): array
     {
         $idx = 0;
         $map = [];
-
         foreach ($mapping as $pos => $key) {
             $code = is_array($key) ? $key['_'] : $key;
-
             if (isset($map[$idx][$code])) {
                 $idx++;
             }
-
             if (is_array($key)) {
                 foreach ($key as $name => $val) {
                     if ($name !== '_') {
@@ -144,15 +109,12 @@ class Base extends \Aimeos\Controller\Jobs\Base
                     }
                 }
             }
-
             if (isset($data[$pos])) {
                 $map[$idx][$code] = $data[$pos];
             }
         }
-
         return $map;
     }
-
     /**
      * Returns the processor object for saving the supplier related information
      *
@@ -160,31 +122,24 @@ class Base extends \Aimeos\Controller\Jobs\Base
      * @return \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Iface Processor object
      * @throws \LogicException If class can't be instantiated
      */
-    protected function getProcessors(array $mappings): \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Iface
+    protected function get_processors(array $mappings): \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Iface
     {
         unset($mappings['item']);
-
         $context = $this->context();
         $config = $context->config();
         $object = new \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Done($context, []);
-
         foreach ($mappings as $type => $mapping) {
             if (ctype_alnum($type) === false) {
                 throw new \LogicException(sprintf('Invalid characters in class name "%1$s"', $type), 400);
             }
-
             $name = $config->get('controller/jobs/supplier/import/csv/processor/' . $type . '/name', 'Standard');
-
             if (ctype_alnum($name) === false) {
                 throw new \LogicException(sprintf('Invalid characters in class name "%1$s"', $name), 400);
             }
-
-            $classname = '\\Aimeos\\Controller\\Jobs\\Common\\Supplier\\Import\\Csv\\Processor\\' . ucfirst($type) . '\\' . $name;
+            $classname = '\Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\\' . ucfirst($type) . '\\' . $name;
             $interface = \Aimeos\Controller\Jobs\Common\Supplier\Import\Csv\Processor\Iface::class;
-
             $object = \Aimeos\Utils::create($classname, [$context, $mapping, $object], $interface);
         }
-
         return $object;
     }
 }

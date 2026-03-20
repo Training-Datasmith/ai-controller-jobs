@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Metaways Infosystems GmbH, 2014
@@ -9,7 +8,6 @@ declare(strict_types=1);
  * @package Controller
  * @subpackage Jobs
  */
-
 namespace Aimeos\Controller\Jobs\Product\Bought;
 
 /**
@@ -52,7 +50,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param string Last part of the class name
      * @since 2014.03
      */
-
     /** controller/jobs/product/bought/decorators/excludes
      * Excludes decorators added by the "common" option from the product bought job controller
      *
@@ -77,7 +74,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/product/bought/decorators/global
      * @see controller/jobs/product/bought/decorators/local
      */
-
     /** controller/jobs/product/bought/decorators/global
      * Adds a list of globally available decorators only to the product bought job controller
      *
@@ -100,7 +96,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/product/bought/decorators/excludes
      * @see controller/jobs/product/bought/decorators/local
      */
-
     /** controller/jobs/product/bought/decorators/local
      * Adds a list of local decorators only to the product bought job controller
      *
@@ -125,27 +120,24 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/product/bought/decorators/excludes
      * @see controller/jobs/product/bought/decorators/global
      */
-
     /**
      * Returns the localized name of the job.
      *
      * @return string Name of the job
      */
-    public function getName(): string
+    public function get_name(): string
     {
         return $this->context()->translate('controller/jobs', 'Products bought together');
     }
-
     /**
      * Returns the localized description of the job.
      *
      * @return string Description of the job
      */
-    public function getDescription(): string
+    public function get_description(): string
     {
         return $this->context()->translate('controller/jobs', 'Creates bought together product suggestions');
     }
-
     /**
      * Executes the job.
      *
@@ -156,18 +148,15 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
         if (empty($total = $this->total())) {
             return;
         }
-
         $start = 0;
         $size = $this->size();
         $counts = $this->counts();
         $ids = $counts->keys();
-
-        while (!($prodIds = $ids->slice($start, $size))->isEmpty()) {
-            $this->update($counts, $prodIds, $total);
+        while (!($prod_ids = $ids->slice($start, $size))->is_empty()) {
+            $this->update($counts, $prod_ids, $total);
             $start += $size;
         }
     }
-
     /**
      * Returns the minimum confidence value for high quality suggestions
      *
@@ -199,7 +188,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          */
         return $this->context()->config()->get('controller/jobs/product/bought/min-confidence', 0.66);
     }
-
     /**
      * Returns how often the product has been bought
      *
@@ -207,12 +195,10 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      */
     protected function counts(): \Aimeos\Map
     {
-        $manager = \Aimeos\MShop::create($this->context(), 'order/product');
+        $manager = \Aimeos\M_Shop::create($this->context(), 'order/product');
         $filter = $manager->filter()->add('order.product.ctime', '>', $this->ctime())->slice(0, 0x7fffffff);
-
         return $manager->aggregate($filter, 'order.product.productid');
     }
-
     /**
      * Returns the date of the oldest ordered product to use
      *
@@ -244,7 +230,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
         $days = $this->context()->config()->get('controller/jobs/product/bought/limit-days', 360);
         return date('Y-m-d H:i:s', time() - $days * 86400);
     }
-
     /**
      * Returns the domain names to fetch for each product
      *
@@ -254,7 +239,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
     {
         return $this->context()->config()->get('mshop/product/manager/domains', []) + ['product'];
     }
-
     /**
      * Returns the maximum number of suggested items per product
      *
@@ -280,7 +264,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          */
         return $this->context()->config()->get('controller/jobs/product/bought/max-items', 5);
     }
-
     /**
      * Returns the relative counts for the given product IDs
      *
@@ -288,20 +271,13 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param iterable $prodIds List of product IDs to create suggestions for
      * @return \Aimeos\Map Map with the product IDs as keys and the relative counts as values
      */
-    protected function relative(string $id, iterable $prodIds): \Aimeos\Map
+    protected function relative(string $id, iterable $prod_ids): \Aimeos\Map
     {
-        $manager = \Aimeos\MShop::create($this->context(), 'order/product');
-
+        $manager = \Aimeos\M_Shop::create($this->context(), 'order/product');
         $search = $manager->filter();
-        $search->add($search->and([
-            $search->is('order.product.productid', '==', $prodIds),
-            $search->is('order.product.ctime', '>', $this->ctime()),
-            $search->is($search->make('agg:order.product:count', [$id]), '==', 1),
-        ]));
-
+        $search->add($search->and([$search->is('order.product.productid', '==', $prod_ids), $search->is('order.product.ctime', '>', $this->ctime()), $search->is($search->make('agg:order.product:count', [$id]), '==', 1)]));
         return $manager->aggregate($search, 'order.product.productid')->remove($id);
     }
-
     /**
      * Returns the number of items processed at once
      *
@@ -325,7 +301,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          */
         return $this->context()->config()->get('controller/jobs/product/bought/size', 100);
     }
-
     /**
      * Returns the IDs of the suggested products.
      *
@@ -335,25 +310,20 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param int $total Total number of orders
      * @return \Aimeos\Map List of suggested product IDs
      */
-    protected function suggest(string $id, iterable $prodIds, int $count, int $total): \Aimeos\Map
+    protected function suggest(string $id, iterable $prod_ids, int $count, int $total): \Aimeos\Map
     {
         $products = [];
-        $supportA = $count / $total;
-
-        $minSupport = $this->support();
-        $minConfidence = $this->confidence();
-
-        foreach ($this->relative($id, $prodIds) as $prodId => $relCnt) {
-            $supportAB = $relCnt / $total;
-
-            if ($supportAB > $minSupport && ($conf = ($supportAB / $supportA)) > $minConfidence) {
-                $products[$prodId] = $conf;
+        $support_a = $count / $total;
+        $min_support = $this->support();
+        $min_confidence = $this->confidence();
+        foreach ($this->relative($id, $prod_ids) as $prod_id => $rel_cnt) {
+            $support_ab = $rel_cnt / $total;
+            if ($support_ab > $min_support && ($conf = $support_ab / $support_a) > $min_confidence) {
+                $products[$prod_id] = $conf;
             }
         }
-
         return map($products)->arsort()->keys();
     }
-
     /**
      * Returns the minimum support value to sort out irrelevant combinations
      *
@@ -389,7 +359,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          */
         return $this->context()->config()->get('controller/jobs/product/bought/min-support', 0.02);
     }
-
     /**
      * Returns the total number of orders available
      *
@@ -398,14 +367,11 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
     protected function total(): int
     {
         $total = 0;
-
-        $manager = \Aimeos\MShop::create($this->context(), 'order');
+        $manager = \Aimeos\M_Shop::create($this->context(), 'order');
         $filter = $manager->filter()->add('order.ctime', '>', $this->ctime())->slice(0, 0);
         $manager->search($filter, [], $total)->all();
-
         return $total;
     }
-
     /**
      * Updates the products bought together for the given item
      *
@@ -413,30 +379,25 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param iterable $prodIds List of product IDs to create suggestions for
      * @param int $total Total number of orders
      */
-    protected function update(iterable $counts, iterable $prodIds, int $total)
+    protected function update(iterable $counts, iterable $prod_ids, int $total)
     {
-        $manager = \Aimeos\MShop::create($this->context(), 'product');
-        $filter = $manager->filter()->add('product.id', '==', $prodIds)->slice(0, 0x7fffffff);
+        $manager = \Aimeos\M_Shop::create($this->context(), 'product');
+        $filter = $manager->filter()->add('product.id', '==', $prod_ids)->slice(0, 0x7fffffff);
         $products = $manager->search($filter, $this->domains());
-
         foreach ($counts as $id => $count) {
             if ($item = $products->get($id)) {
-                $listItems = $item->getListItems('product', 'bought-together');
-
+                $list_items = $item->get_list_items('product', 'bought-together');
                 if ($count / $total > $this->support()) {
-                    $productIds = $this->suggest($id, $prodIds, $count, $total)->slice(0, $this->max());
-
-                    foreach ($productIds as $pid) {
-                        $litem = $item->getListItem('product', 'bought-together', $pid, false) ?: $manager->createListItem();
-                        $item->addListItem('product', $litem->setType('bought-together')->setRefId($pid));
-                        $listItems->remove($litem->getId());
+                    $product_ids = $this->suggest($id, $prod_ids, $count, $total)->slice(0, $this->max());
+                    foreach ($product_ids as $pid) {
+                        $litem = $item->get_list_item('product', 'bought-together', $pid, false) ?: $manager->create_list_item();
+                        $item->add_list_item('product', $litem->set_type('bought-together')->set_ref_id($pid));
+                        $list_items->remove($litem->get_id());
                     }
                 }
-
-                $item->deleteListItems($listItems);
+                $item->delete_list_items($list_items);
             }
         }
-
         $manager->save($products);
     }
 }

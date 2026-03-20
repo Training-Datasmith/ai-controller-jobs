@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2018-2026
  * @package Controller
  * @subpackage Order
  */
-
 namespace Aimeos\Controller\Jobs\Order\Email\Voucher;
 
 /**
@@ -51,7 +49,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param string Last part of the class name
      * @since 2014.03
      */
-
     /** controller/jobs/order/email/voucher/decorators/excludes
      * Excludes decorators added by the "common" option from the order email voucher controllers
      *
@@ -76,7 +73,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/order/email/voucher/decorators/global
      * @see controller/jobs/order/email/voucher/decorators/local
      */
-
     /** controller/jobs/order/email/voucher/decorators/global
      * Adds a list of globally available decorators only to the order email voucher controllers
      *
@@ -99,7 +95,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/order/email/voucher/decorators/excludes
      * @see controller/jobs/order/email/voucher/decorators/local
      */
-
     /** controller/jobs/order/email/voucher/decorators/local
      * Adds a list of local decorators only to the order email voucher controllers
      *
@@ -123,31 +118,26 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/order/email/voucher/decorators/excludes
      * @see controller/jobs/order/email/voucher/decorators/global
      */
-
     use \Aimeos\Controller\Jobs\Mail;
-
-    private ?string $couponId = null;
-
+    private ?string $coupon_id = null;
     /**
      * Returns the localized name of the job.
      *
      * @return string Name of the job
      */
-    public function getName(): string
+    public function get_name(): string
     {
         return $this->context()->translate('controller/jobs', 'Voucher related e-mails');
     }
-
     /**
      * Returns the localized description of the job.
      *
      * @return string Description of the job
      */
-    public function getDescription(): string
+    public function get_description(): string
     {
         return $this->context()->translate('controller/jobs', 'Sends the e-mail with the voucher to the customer');
     }
-
     /**
      * Executes the job.
      *
@@ -156,16 +146,13 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
     public function run(): void
     {
         $context = $this->context();
-        $manager = \Aimeos\MShop::create($context, 'order');
-
+        $manager = \Aimeos\M_Shop::create($context, 'order');
         $filter = $this->filter($manager->filter());
         $cursor = $manager->cursor($filter);
-
         while ($items = $manager->iterate($cursor, ['order/address', 'order/product'])) {
             $this->notify($items);
         }
     }
-
     /**
      * Returns the delivery address item of the order
      *
@@ -173,75 +160,62 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @return \Aimeos\MShop\Order\Item\Address\Iface Delivery or voucher address item
      * @throws \Aimeos\Controller\Jobs\Exception If no address item is available
      */
-    protected function address(\Aimeos\MShop\Order\Item\Iface $orderBaseItem): \Aimeos\MShop\Order\Item\Address\Iface
+    protected function address(\Aimeos\M_Shop\Order\Item\Iface $order_base_item): \Aimeos\M_Shop\Order\Item\Address\Iface
     {
-        $type = \Aimeos\MShop\Order\Item\Address\Base::TYPE_DELIVERY;
-        if (($addr = current($orderBaseItem->getAddress($type))) !== false && $addr->getEmail() !== '') {
+        $type = \Aimeos\M_Shop\Order\Item\Address\Base::TYPE_DELIVERY;
+        if (($addr = current($order_base_item->get_address($type))) !== false && $addr->get_email() !== '') {
             return $addr;
         }
-
-        $type = \Aimeos\MShop\Order\Item\Address\Base::TYPE_PAYMENT;
-        if (($addr = current($orderBaseItem->getAddress($type))) !== false && $addr->getEmail() !== '') {
+        $type = \Aimeos\M_Shop\Order\Item\Address\Base::TYPE_PAYMENT;
+        if (($addr = current($order_base_item->get_address($type))) !== false && $addr->get_email() !== '') {
             return $addr;
         }
-
-        $msg = sprintf('No address with e-mail found in order with ID "%1$s"', $orderBaseItem->getId());
+        $msg = sprintf('No address with e-mail found in order with ID "%1$s"', $order_base_item->get_id());
         throw new \Aimeos\Controller\Jobs\Exception($msg);
     }
-
     /**
      * Creates coupon codes for the bought vouchers
      *
      * @param \Aimeos\Map $orderProdItems Complete order including addresses, products, services
      */
-    protected function createCoupons(\Aimeos\Map $orderProdItems): \Aimeos\Map
+    protected function create_coupons(\Aimeos\Map $order_prod_items): \Aimeos\Map
     {
         $map = [];
-        $manager = \Aimeos\MShop::create($this->context(), 'order');
-
-        foreach ($orderProdItems as $orderProductItem) {
-            if ($orderProductItem->getAttribute('coupon-code', 'coupon')) {
+        $manager = \Aimeos\M_Shop::create($this->context(), 'order');
+        foreach ($order_prod_items as $order_product_item) {
+            if ($order_product_item->get_attribute('coupon-code', 'coupon')) {
                 continue;
             }
-
             $codes = [];
-
-            for ($i = 0; $i < $orderProductItem->getQuantity(); $i++) {
-                $str = $i . getmypid() . microtime(true) . $orderProductItem->getId();
+            for ($i = 0; $i < $order_product_item->get_quantity(); $i++) {
+                $str = $i . getmypid() . microtime(true) . $order_product_item->get_id();
                 $code = substr(strtoupper(sha1($str)), -8);
-                $map[$code] = $orderProductItem->getId();
+                $map[$code] = $order_product_item->get_id();
                 $codes[] = $code;
             }
-
-            $item = $manager->createProductAttribute()->setCode('coupon-code')->setType('coupon')->setValue($codes);
-            $orderProductItem->setAttributeItem($item);
+            $item = $manager->create_product_attribute()->set_code('coupon-code')->set_type('coupon')->set_value($codes);
+            $order_product_item->set_attribute_item($item);
         }
-
-        $this->saveCoupons($map);
-        return $orderProdItems;
+        $this->save_coupons($map);
+        return $order_prod_items;
     }
-
     /**
      * Returns the coupon ID for the voucher coupon
      *
      * @return string Unique ID of the coupon item
      */
-    protected function couponId(): string
+    protected function coupon_id(): string
     {
-        if (!isset($this->couponId)) {
-            $manager = \Aimeos\MShop::create($this->context(), 'coupon');
+        if (!isset($this->coupon_id)) {
+            $manager = \Aimeos\M_Shop::create($this->context(), 'coupon');
             $filter = $manager->filter()->add('coupon.provider', '=~', 'Voucher')->slice(0, 1);
-
             if (($item = $manager->search($filter)->first()) === null) {
                 throw new \Aimeos\Controller\Jobs\Exception('No coupon provider "Voucher" available');
             }
-
-            $this->couponId = $item->getId();
+            $this->coupon_id = $item->get_id();
         }
-
-        return $this->couponId;
+        return $this->coupon_id;
     }
-
     /**
      * Returns the PDF file name
      *
@@ -252,7 +226,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
     {
         return $this->context()->translate('controller/jobs', 'Voucher') . '-' . $code . '.pdf';
     }
-
     /**
      * Returns the filter for searching the appropriate orders
      *
@@ -261,18 +234,10 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      */
     protected function filter(\Aimeos\Base\Criteria\Iface $filter): \Aimeos\Base\Criteria\Iface
     {
-        $limitDate = date('Y-m-d H:i:s', time() - $this->limit() * 86400);
-
-        $filter->add($filter->and([
-            $filter->compare('>=', 'order.mtime', $limitDate),
-            $filter->compare('==', 'order.statuspayment', $this->status()),
-            $filter->compare('==', 'order.product.type', 'voucher'),
-            $filter->compare('==', $filter->make('order:status', [$this->type(), '1']), 0),
-        ]));
-
+        $limit_date = date('Y-m-d H:i:s', time() - $this->limit() * 86400);
+        $filter->add($filter->and([$filter->compare('>=', 'order.mtime', $limit_date), $filter->compare('==', 'order.statuspayment', $this->status()), $filter->compare('==', 'order.product.type', 'voucher'), $filter->compare('==', $filter->make('order:status', [$this->type(), '1']), 0)]));
         return $filter;
     }
-
     /**
      * Returns the number of days after no e-mail will be sent anymore
      *
@@ -295,7 +260,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          */
         return (int) $this->context()->config()->get('controller/jobs/order/email/voucher/limit-days', 30);
     }
-
     /**
      * Sends the voucher e-mail for the given orders
      *
@@ -304,44 +268,34 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
     protected function notify(\Aimeos\Map $items)
     {
         $context = $this->context();
-        $sites = $this->sites($items->getSiteId()->unique());
-
-        $couponManager = \Aimeos\MShop::create($context, 'coupon');
-        $orderProdManager = \Aimeos\MShop::create($context, 'order/product');
-
+        $sites = $this->sites($items->get_site_id()->unique());
+        $coupon_manager = \Aimeos\M_Shop::create($context, 'coupon');
+        $order_prod_manager = \Aimeos\M_Shop::create($context, 'order/product');
         foreach ($items as $id => $item) {
-            $couponManager->begin();
-            $orderProdManager->begin();
-
+            $coupon_manager->begin();
+            $order_prod_manager->begin();
             try {
                 $products = $this->products($item);
-                $orderProdManager->save($this->createCoupons($products));
-
+                $order_prod_manager->save($this->create_coupons($products));
                 $addr = $this->address($item);
-                $context->locale()->setLanguageId($addr->getLanguageId());
-
-                $list = $sites->get($item->getSiteId(), map());
-                $view = $this->view($item, $list->getTheme()->filter()->last());
-
-                $this->send($view, $products, $addr, $list->getLogo()->filter()->last());
+                $context->locale()->set_language_id($addr->get_language_id());
+                $list = $sites->get($item->get_site_id(), map());
+                $view = $this->view($item, $list->get_theme()->filter()->last());
+                $this->send($view, $products, $addr, $list->get_logo()->filter()->last());
                 $this->update($id);
-
-                $orderProdManager->commit();
-                $couponManager->commit();
-
-                $str = sprintf('Sent voucher e-mails for order ID "%1$s"', $item->getId());
+                $order_prod_manager->commit();
+                $coupon_manager->commit();
+                $str = sprintf('Sent voucher e-mails for order ID "%1$s"', $item->get_id());
                 $context->logger()->info($str, 'email/order/voucher');
             } catch (\Exception $e) {
-                $orderProdManager->rollback();
-                $couponManager->rollback();
-
+                $order_prod_manager->rollback();
+                $coupon_manager->rollback();
                 $str = 'Error while trying to send voucher e-mails for order ID "%1$s": %2$s';
-                $msg = sprintf($str, $item->getId(), $e->getMessage() . PHP_EOL . $e->getTraceAsString());
+                $msg = sprintf($str, $item->get_id(), $e->get_message() . PHP_EOL . $e->get_trace_as_string());
                 $context->logger()->info($msg, 'email/order/voucher');
             }
         }
     }
-
     /**
      * Returns the generated PDF file for the order
      *
@@ -351,7 +305,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
     protected function pdf(\Aimeos\Base\View\Iface $view): ?string
     {
         $config = $this->context()->config();
-
         /** controller/jobs/order/email/voucher/pdf
          * Enables attaching a PDF to the voucher e-mail
          *
@@ -363,31 +316,29 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
         if (!$config->get('controller/jobs/order/email/voucher/pdf', true)) {
             return null;
         }
-
-        $pdf = new class (PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false) extends \TCPDF {
-            private ?\Closure $headerFcn = null;
-            private ?\Closure $footerFcn = null;
-
+        $pdf = new class(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false) extends \TCPDF
+        {
+            private ?\Closure $header_fcn = null;
+            private ?\Closure $footer_fcn = null;
             public function Footer()
             {
-                return ($fcn = $this->footerFcn) ? $fcn($this) : null;
+                return ($fcn = $this->footer_fcn) ? $fcn($this) : null;
             }
             public function Header()
             {
-                return ($fcn = $this->headerFcn) ? $fcn($this) : null;
+                return ($fcn = $this->header_fcn) ? $fcn($this) : null;
             }
-            public function setFooterFunction(\Closure $fcn): void
+            public function set_footer_function(\Closure $fcn): void
             {
-                $this->footerFcn = $fcn;
+                $this->footer_fcn = $fcn;
             }
-            public function setHeaderFunction(\Closure $fcn): void
+            public function set_header_function(\Closure $fcn): void
             {
-                $this->headerFcn = $fcn;
+                $this->header_fcn = $fcn;
             }
         };
-        $pdf->setCreator(PDF_CREATOR);
-        $pdf->setAuthor('Aimeos');
-
+        $pdf->set_creator(PDF_CREATOR);
+        $pdf->set_author('Aimeos');
         /** controller/jobs/order/email/voucher/template-pdf
          * Relative path to the template for the PDF part of the voucher emails.
          *
@@ -404,60 +355,49 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          * @see controller/jobs/order/email/voucher/template-text
          */
         $template = $config->get('controller/jobs/order/email/voucher/template-pdf', 'order/email/voucher/pdf');
-
         // Generate HTML before creating first PDF page to include header added in template
         $content = $view->set('pdf', $pdf)->render($template);
-
-        $pdf->addPage();
-        $pdf->writeHtml($content);
-        $pdf->lastPage();
-
+        $pdf->add_page();
+        $pdf->write_html($content);
+        $pdf->last_page();
         return $pdf->output('', 'S');
     }
-
     /**
      * Returns the ordered voucher products from the basket.
      *
      * @param \Aimeos\MShop\Order\Item\Iface $orderBaseItem Basket object
      * @return \Aimeos\Map List of order product items for the voucher products
      */
-    protected function products(\Aimeos\MShop\Order\Item\Iface $orderBaseItem): \Aimeos\Map
+    protected function products(\Aimeos\M_Shop\Order\Item\Iface $order_base_item): \Aimeos\Map
     {
         $list = [];
-
-        foreach ($orderBaseItem->getProducts() as $orderProductItem) {
-            if ($orderProductItem->getType() === 'voucher') {
-                $list[] = $orderProductItem;
+        foreach ($order_base_item->get_products() as $order_product_item) {
+            if ($order_product_item->get_type() === 'voucher') {
+                $list[] = $order_product_item;
             }
-
-            foreach ($orderProductItem->getProducts() as $subProductItem) {
-                if ($subProductItem->getType() === 'voucher') {
-                    $list[] = $subProductItem;
+            foreach ($order_product_item->get_products() as $sub_product_item) {
+                if ($sub_product_item->get_type() === 'voucher') {
+                    $list[] = $sub_product_item;
                 }
             }
         }
-
         return map($list);
     }
-
     /**
      * Saves the given coupon codes
      *
      * @param array $map Associative list of coupon codes as keys and reference Ids as values
      */
-    protected function saveCoupons(array $map)
+    protected function save_coupons(array $map)
     {
-        $couponId = $this->couponId();
-        $manager = \Aimeos\MShop::create($this->context(), 'coupon/code');
-
+        $coupon_id = $this->coupon_id();
+        $manager = \Aimeos\M_Shop::create($this->context(), 'coupon/code');
         foreach ($map as $code => $ref) {
-            $item = $manager->create()->setParentId($couponId)
-                ->setCode($code)->setRef($ref)->setCount(null); // unlimited
-
+            $item = $manager->create()->set_parent_id($coupon_id)->set_code($code)->set_ref($ref)->set_count(null);
+            // unlimited
             $manager->save($item);
         }
     }
-
     /**
      * Sends the voucher related e-mail for a single order
      *
@@ -466,12 +406,8 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param \Aimeos\MShop\Common\Item\Address\Iface $address Address item
      * @param string|null $logoPath Relative path to the logo in the fs-media file system
      */
-    protected function send(
-        \Aimeos\Base\View\Iface $view,
-        \Aimeos\Map $orderProducts,
-        \Aimeos\MShop\Common\Item\Address\Iface $address,
-        ?string $logoPath = null
-    ) {
+    protected function send(\Aimeos\Base\View\Iface $view, \Aimeos\Map $order_products, \Aimeos\M_Shop\Common\Item\Address\Iface $address, ?string $logo_path = null)
+    {
         /** controller/jobs/order/email/voucher/template-html
          * Relative path to the template for the HTML part of the voucher emails.
          *
@@ -486,7 +422,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          * @since 2022.04
          * @see controller/jobs/order/email/voucher/template-text
          */
-
         /** controller/jobs/order/email/voucher/template-text
          * Relative path to the template for the text part of the voucher emails.
          *
@@ -501,51 +436,39 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          * @since 2022.04
          * @see controller/jobs/order/email/voucher/template-html
          */
-
         $context = $this->context();
         $config = $context->config();
-        $logo = $this->call('mailLogo', $logoPath);
-        $view->orderAddressItem = $address;
+        $logo = $this->call('mailLogo', $logo_path);
+        $view->order_address_item = $address;
         $view->logodata = $logo;
-
-        foreach ($orderProducts as $orderProductItem) {
-            if (!empty($codes = $orderProductItem->getAttribute('coupon-code', 'coupon'))) {
+        foreach ($order_products as $order_product_item) {
+            if (!empty($codes = $order_product_item->get_attribute('coupon-code', 'coupon'))) {
                 foreach ((array) $codes as $code) {
-                    $view->orderProductItem = $orderProductItem;
+                    $view->order_product_item = $order_product_item;
                     $view->voucher = $code;
-
                     $msg = $this->call('mailTo', $address);
-                    $view->logo = $msg->embed($logo, basename((string) $logoPath));
-
-                    $msg->subject($context->translate('controller/jobs', 'Your voucher'))
-                        ->html($view->render($config->get('controller/jobs/order/email/voucher/template-html', 'order/email/voucher/html')))
-                        ->text($view->render($config->get('controller/jobs/order/email/voucher/template-text', 'order/email/voucher/text')))
-                        ->attach($this->pdf($view), $this->call('filename', $code), 'application/pdf')
-                        ->send();
+                    $view->logo = $msg->embed($logo, basename((string) $logo_path));
+                    $msg->subject($context->translate('controller/jobs', 'Your voucher'))->html($view->render($config->get('controller/jobs/order/email/voucher/template-html', 'order/email/voucher/html')))->text($view->render($config->get('controller/jobs/order/email/voucher/template-text', 'order/email/voucher/text')))->attach($this->pdf($view), $this->call('filename', $code), 'application/pdf')->send();
                 }
             }
         }
     }
-
     /**
      * Returns the site items for the given site codes
      *
      * @param iterable $siteIds List of site IDs
      * @return \Aimeos\Map Site items with codes as keys
      */
-    protected function sites(iterable $siteIds): \Aimeos\Map
+    protected function sites(iterable $site_ids): \Aimeos\Map
     {
         $map = [];
-        $manager = \Aimeos\MShop::create($this->context(), 'locale/site');
-
-        foreach ($siteIds as $siteId) {
-            $list = explode('.', trim($siteId, '.'));
-            $map[$siteId] = $manager->getPath(end($list));
+        $manager = \Aimeos\M_Shop::create($this->context(), 'locale/site');
+        foreach ($site_ids as $site_id) {
+            $list = explode('.', trim($site_id, '.'));
+            $map[$site_id] = $manager->get_path(end($list));
         }
-
         return map($map);
     }
-
     /**
      * Returns the payment status for which the e-mails should be sent
      *
@@ -570,9 +493,8 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          * @since 2018.07
          * @see controller/jobs/order/email/voucher/limit-days
          */
-        return (int) $this->context()->config()->get('controller/jobs/order/email/voucher/status', \Aimeos\MShop\Order\Item\Base::PAY_RECEIVED);
+        return (int) $this->context()->config()->get('controller/jobs/order/email/voucher/status', \Aimeos\M_Shop\Order\Item\Base::PAY_RECEIVED);
     }
-
     /**
      * Returns the status type for filtering the orders
      *
@@ -580,24 +502,19 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      */
     protected function type(): string
     {
-        return \Aimeos\MShop\Order\Item\Status\Base::EMAIL_VOUCHER;
+        return \Aimeos\M_Shop\Order\Item\Status\Base::EMAIL_VOUCHER;
     }
-
     /**
      * Adds the status of the delivered e-mail for the given order ID
      *
      * @param string $orderId Unique order ID
      */
-    protected function update(string $orderId)
+    protected function update(string $order_id)
     {
-        $orderStatusManager = \Aimeos\MShop::create($this->context(), 'order/status');
-
-        $statusItem = $orderStatusManager->create()->setParentId($orderId)->setValue(1)
-            ->setType(\Aimeos\MShop\Order\Item\Status\Base::EMAIL_VOUCHER);
-
-        $orderStatusManager->save($statusItem);
+        $order_status_manager = \Aimeos\M_Shop::create($this->context(), 'order/status');
+        $status_item = $order_status_manager->create()->set_parent_id($order_id)->set_value(1)->set_type(\Aimeos\M_Shop\Order\Item\Status\Base::EMAIL_VOUCHER);
+        $order_status_manager->save($status_item);
     }
-
     /**
      * Returns the view populated with common data
      *
@@ -605,21 +522,15 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param string|null $theme Theme name
      * @return \Aimeos\Base\View\Iface View object
      */
-    protected function view(\Aimeos\MShop\Order\Item\Iface $base, ?string $theme = null): \Aimeos\Base\View\Iface
+    protected function view(\Aimeos\M_Shop\Order\Item\Iface $base, ?string $theme = null): \Aimeos\Base\View\Iface
     {
         $address = $this->address($base);
-        $langId = $address->getLanguageId() ?: $base->locale()->getLanguageId();
-
-        $view = $this->call('mailView', $langId);
+        $lang_id = $address->get_language_id() ?: $base->locale()->get_language_id();
+        $view = $this->call('mailView', $lang_id);
         $view->intro = $this->call('mailIntro', $address);
         $view->css = $this->call('mailCss', $theme);
         $view->address = $address;
-        $view->urlparams = [
-            'currency' => $base->getPrice()->getCurrencyId(),
-            'site' => $base->getSiteCode(),
-            'locale' => $langId,
-        ];
-
+        $view->urlparams = ['currency' => $base->get_price()->get_currency_id(), 'site' => $base->get_site_code(), 'locale' => $lang_id];
         return $view;
     }
 }

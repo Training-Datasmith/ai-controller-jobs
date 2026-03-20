@@ -4,39 +4,72 @@
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2015-2026
  */
-
-$enc = $this->encoder()
-
+$enc = $this->encoder();
+echo '<?xml version="1.0" encoding="UTF-8"?>';
 ?>
-<?php echo '<?xml version="1.0" encoding="UTF-8"?>'; ?>
 <products>
-	<?php foreach ($this->get('exportItems', []) as $item) : ?>
-		<productitem ref="<?= $enc->attr($item->getCode()) ?>">
-			<product.type><![CDATA[<?= $enc->xml($item->getType()) ?>]]></product.type>
-			<product.code><![CDATA[<?= $enc->xml($item->getCode()) ?>]]></product.code>
-			<product.label><![CDATA[<?= $enc->xml($item->getLabel()) ?>]]></product.label>
-			<product.boost><![CDATA[<?= $enc->xml($item->boost()) ?>]]></product.boost>
-			<product.status><![CDATA[<?= $enc->xml($item->getStatus()) ?>]]></product.status>
-			<product.config><![CDATA[<?= $enc->xml(json_encode($item->getConfig())) ?>]]></product.config>
-			<product.datestart><![CDATA[<?= $enc->xml(str_replace(' ', 'T', $item->getDateStart() ?? '')) ?>]]></product.datestart>
-			<product.dateend><![CDATA[<?= $enc->xml(str_replace(' ', 'T', $item->getDateEnd() ?? '')) ?>]]></product.dateend>
+	<?php 
+foreach ($this->get('exportItems', []) as $item) {
+    ?>
+		<productitem ref="<?php 
+    echo $enc->attr($item->get_code());
+    ?>">
+			<product.type><![CDATA[<?php 
+    echo $enc->xml($item->get_type());
+    ?>]]></product.type>
+			<product.code><![CDATA[<?php 
+    echo $enc->xml($item->get_code());
+    ?>]]></product.code>
+			<product.label><![CDATA[<?php 
+    echo $enc->xml($item->get_label());
+    ?>]]></product.label>
+			<product.boost><![CDATA[<?php 
+    echo $enc->xml($item->boost());
+    ?>]]></product.boost>
+			<product.status><![CDATA[<?php 
+    echo $enc->xml($item->get_status());
+    ?>]]></product.status>
+			<product.config><![CDATA[<?php 
+    echo $enc->xml(json_encode($item->get_config()));
+    ?>]]></product.config>
+			<product.datestart><![CDATA[<?php 
+    echo $enc->xml(str_replace(' ', 'T', $item->get_date_start() ?? ''));
+    ?>]]></product.datestart>
+			<product.dateend><![CDATA[<?php 
+    echo $enc->xml(str_replace(' ', 'T', $item->get_date_end() ?? ''));
+    ?>]]></product.dateend>
 			<lists>
-				<?php foreach ($item->getDomains() as $domain) : ?>
-					<?= $this->partial(
-					    'product/export/items-partial-' . str_replace('/', '', $domain) . '-standard',
-					    ['listItems' => $item->getListItems($domain)]
-					) ?>
-				<?php endforeach ?>
+				<?php 
+    foreach ($item->get_domains() as $domain) {
+        ?>
+					<?php 
+        echo $this->partial('product/export/items-partial-' . str_replace('/', '', $domain) . '-standard', ['listItems' => $item->get_list_items($domain)]);
+        ?>
+				<?php 
+    }
+    ?>
 			</lists>
 			<property>
-				<?php foreach ($item->getPropertyItems() as $propItem) : ?>
+				<?php 
+    foreach ($item->get_property_items() as $prop_item) {
+        ?>
 					<propertyitem>
-						<product.property.type><![CDATA[<?= $enc->xml($propItem->getType()) ?>]]></product.property.type>
-						<product.property.languageid><![CDATA[<?= $enc->xml($propItem->getLanguageId()) ?>]]></product.property.languageid>
-						<product.property.value><![CDATA[<?= $enc->xml($propItem->getValue()) ?>]]></product.property.value>
+						<product.property.type><![CDATA[<?php 
+        echo $enc->xml($prop_item->get_type());
+        ?>]]></product.property.type>
+						<product.property.languageid><![CDATA[<?php 
+        echo $enc->xml($prop_item->get_language_id());
+        ?>]]></product.property.languageid>
+						<product.property.value><![CDATA[<?php 
+        echo $enc->xml($prop_item->get_value());
+        ?>]]></product.property.value>
 					</propertyitem>
-				<?php endforeach ?>
+				<?php 
+    }
+    ?>
 			</property>
 		</productitem>
-	<?php endforeach ?>
+	<?php 
+}
+?>
 </products>

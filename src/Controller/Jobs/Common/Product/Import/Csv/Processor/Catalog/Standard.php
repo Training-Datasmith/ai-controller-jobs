@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2015-2026
  * @package Controller
  * @subpackage Common
  */
-
 namespace Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Catalog;
 
 /**
@@ -28,10 +26,8 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Process
      * @param string Last part of the processor class name
      * @since 2015.10
      */
-
     private \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Cache\Catalog\Standard $cache;
-    private ?array $listTypes = null;
-
+    private ?array $list_types = null;
     /**
      * Initializes the object
      *
@@ -39,15 +35,10 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Process
      * @param array $mapping Associative list of field position in CSV as key and domain item key as value
      * @param \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Iface $object Decorated processor
      */
-    public function __construct(
-        \Aimeos\MShop\ContextIface $context,
-        array $mapping,
-        ?\Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Iface $object = null
-    ) {
+    public function __construct(\Aimeos\M_Shop\Context_Iface $context, array $mapping, ?\Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Iface $object = null)
+    {
         parent::__construct($context, $mapping, $object);
-
         $config = $context->config();
-
         /** controller/jobs/product/import/csv/catalog/listtypes
          * Names of the catalog list types that are updated or removed
          *
@@ -74,23 +65,19 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Process
          * @see controller/jobs/product/import/csv/text/listtypes
          */
         $default = $config->get('controller/jobs/product/import/csv/processor/catalog/listtypes', ['default', 'promotion']);
-        $this->listTypes = $config->get('controller/jobs/product/import/csv/catalog/listtypes', $default);
-
-        if ($this->listTypes === null) {
-            $this->listTypes = [];
-            $manager = \Aimeos\MShop::create($context, 'product/lists/type');
+        $this->list_types = $config->get('controller/jobs/product/import/csv/catalog/listtypes', $default);
+        if ($this->list_types === null) {
+            $this->list_types = [];
+            $manager = \Aimeos\M_Shop::create($context, 'product/lists/type');
             $search = $manager->filter()->slice(0, 0x7fffffff);
-
             foreach ($manager->search($search) as $item) {
-                $this->listTypes[$item->getCode()] = $item->getCode();
+                $this->list_types[$item->get_code()] = $item->get_code();
             }
         } else {
-            $this->listTypes = array_combine($this->listTypes, $this->listTypes);
+            $this->list_types = array_combine($this->list_types, $this->list_types);
         }
-
-        $this->cache = $this->getCache('catalog');
+        $this->cache = $this->get_cache('catalog');
     }
-
     /**
      * Saves the catalog related data to the storage
      *
@@ -98,71 +85,56 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Process
      * @param array $data List of CSV fields with position as key and data as value
      * @return array List of data which has not been imported
      */
-    public function process(\Aimeos\MShop\Product\Item\Iface $product, array $data): array
+    public function process(\Aimeos\M_Shop\Product\Item\Iface $product, array $data): array
     {
         $context = $this->context();
         $logger = $context->logger();
-
-        $manager = \Aimeos\MShop::create($context, 'product');
+        $manager = \Aimeos\M_Shop::create($context, 'product');
         $separator = $context->config()->get('controller/jobs/product/import/csv/separator', "\n");
-
-        $listItems = $product->getListItems('catalog', $this->listTypes, null, false);
+        $list_items = $product->get_list_items('catalog', $this->list_types, null, false);
         $pos = 0;
-
-        foreach ($this->getMappedChunk($data, $this->getMapping()) as $list) {
-            if ($this->checkEntry($list) === false) {
+        foreach ($this->get_mapped_chunk($data, $this->get_mapping()) as $list) {
+            if ($this->check_entry($list) === false) {
                 continue;
             }
-
-            $listConfig = $this->getListConfig(trim($this->val($list, 'product.lists.config', '')));
+            $list_config = $this->get_list_config(trim($this->val($list, 'product.lists.config', '')));
             $listtype = trim($this->val($list, 'product.lists.type', 'default'));
-
             unset($list['product.lists.config']);
-
-            $this->addType('product/lists/type', 'catalog', $listtype);
-
+            $this->add_type('product/lists/type', 'catalog', $listtype);
             foreach (explode($separator, trim($this->val($list, 'catalog.code', ''))) as $code) {
                 $code = trim($code);
-
-                if (($catItem = $this->cache->get($code)) === null) {
+                if (($cat_item = $this->cache->get($code)) === null) {
                     $msg = 'No catalog for code "%1$s" available when importing product with code "%2$s"';
-                    $logger->warning(sprintf($msg, $code, $product->getCode()), 'import/csv/product');
+                    $logger->warning(sprintf($msg, $code, $product->get_code()), 'import/csv/product');
                     continue;
                 }
-
-                if (($listItem = $product->getListItem('catalog', $listtype, $catItem->getId())) === null) {
-                    $listItem = $manager->createListItem()->setType($listtype);
+                if (($list_item = $product->get_list_item('catalog', $listtype, $cat_item->get_id())) === null) {
+                    $list_item = $manager->create_list_item()->set_type($listtype);
                 } else {
-                    unset($listItems[$listItem->getId()]);
+                    unset($list_items[$list_item->get_id()]);
                 }
-
-                $listItem = $listItem->fromArray($list)->setConfig($listConfig)->setPosition($pos++);
-                $product->addListItem('catalog', $listItem, $catItem);
+                $list_item = $list_item->from_array($list)->set_config($list_config)->set_position($pos++);
+                $product->add_list_item('catalog', $list_item, $cat_item);
             }
         }
-
-        $product->deleteListItems($listItems);
-
+        $product->delete_list_items($list_items);
         return $this->object()->process($product, $data);
     }
-
     /**
      * Checks if an entry can be used for updating a media item
      *
      * @param array $list Associative list of key/value pairs from the mapping
      * @return bool True if valid, false if not
      */
-    protected function checkEntry(array $list): bool
+    protected function check_entry(array $list): bool
     {
         if ($this->val($list, 'catalog.code') === null) {
             return false;
         }
-
-        if (($type = trim($this->val($list, 'product.lists.type', 'default'))) && !isset($this->listTypes[$type])) {
+        if (($type = trim($this->val($list, 'product.lists.type', 'default'))) && !isset($this->list_types[$type])) {
             $msg = sprintf('Invalid type "%1$s" (%2$s)', $type, 'product list');
             throw new \Aimeos\Controller\Jobs\Exception($msg);
         }
-
         return true;
     }
 }

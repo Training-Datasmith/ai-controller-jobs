@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2015-2026
  * @package Controller
  * @subpackage Common
  */
-
 namespace Aimeos\Controller\Jobs\Common\Product\Import\Csv\Processor\Property;
 
 /**
@@ -28,7 +26,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Process
      * @param string Last part of the processor class name
      * @since 2015.10
      */
-
     /**
      * Saves the product property related data to the storage
      *
@@ -36,38 +33,30 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Product\Import\Csv\Process
      * @param array $data List of CSV fields with position as key and data as value
      * @return array List of data which hasn't been imported
      */
-    public function process(\Aimeos\MShop\Product\Item\Iface $product, array $data): array
+    public function process(\Aimeos\M_Shop\Product\Item\Iface $product, array $data): array
     {
-        $manager = \Aimeos\MShop::create($this->context(), 'product');
-
-        $propMap = [];
-        $items = $product->getPropertyItems(null, false);
-        $map = $this->getMappedChunk($data, $this->getMapping());
-
+        $manager = \Aimeos\M_Shop::create($this->context(), 'product');
+        $prop_map = [];
+        $items = $product->get_property_items(null, false);
+        $map = $this->get_mapped_chunk($data, $this->get_mapping());
         foreach ($items as $item) {
-            $propMap[$item->getValue()][$item->getType()] = $item;
+            $prop_map[$item->get_value()][$item->get_type()] = $item;
         }
-
         foreach ($map as $list) {
             if (($value = $this->val($list, 'product.property.value')) === null) {
                 continue;
             }
-
             $type = $this->val($list, 'product.property.type');
-            $this->addType('product/property/type', 'product', $type);
-
-            if (isset($propMap[$value][$type])) {
-                $item = $propMap[$value][$type];
-                $items->remove($item->getId());
+            $this->add_type('product/property/type', 'product', $type);
+            if (isset($prop_map[$value][$type])) {
+                $item = $prop_map[$value][$type];
+                $items->remove($item->get_id());
             } else {
-                $item = $manager->createPropertyItem()->setType($type);
+                $item = $manager->create_property_item()->set_type($type);
             }
-
-            $product->addPropertyItem($item->fromArray($list));
+            $product->add_property_item($item->from_array($list));
         }
-
-        $product->deletePropertyItems($items->toArray());
-
+        $product->delete_property_items($items->to_array());
         return $this->object()->process($product, $data);
     }
 }

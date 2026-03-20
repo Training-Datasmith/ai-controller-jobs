@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2018-2026
  * @package Controller
  * @subpackage Common
  */
-
 namespace Aimeos\Controller\Jobs\Common\Catalog\Import\Csv\Processor;
 
 /**
@@ -20,8 +18,7 @@ namespace Aimeos\Controller\Jobs\Common\Catalog\Import\Csv\Processor;
 class Base extends \Aimeos\Controller\Jobs\Common\Catalog\Import\Csv\Base
 {
     use \Aimeos\Controller\Jobs\Common\Types;
-    private \Aimeos\MShop\ContextIface $context;
-
+    private \Aimeos\M_Shop\Context_Iface $context;
     /**
      * Initializes the object
      *
@@ -29,14 +26,10 @@ class Base extends \Aimeos\Controller\Jobs\Common\Catalog\Import\Csv\Base
      * @param array $mapping Associative list of field position in CSV as key and domain item key as value
      * @param \Aimeos\Controller\Jobs\Common\Catalog\Import\Csv\Processor\Iface $object Decorated processor
      */
-    public function __construct(
-        \Aimeos\MShop\ContextIface $context,
-        private array $mapping,
-        private \Aimeos\Controller\Jobs\Common\Catalog\Import\Csv\Processor\Iface $object = null
-    ) {
+    public function __construct(\Aimeos\M_Shop\Context_Iface $context, private array $mapping, private \Aimeos\Controller\Jobs\Common\Catalog\Import\Csv\Processor\Iface $object = null)
+    {
         $this->context = $context;
     }
-
     /**
      * Stores all types for which no type items exist yet
      */
@@ -45,30 +38,26 @@ class Base extends \Aimeos\Controller\Jobs\Common\Catalog\Import\Csv\Base
         if ($this->object) {
             $this->object->finish();
         }
-
-        $this->saveTypes();
+        $this->save_types();
     }
-
     /**
      * Returns the context item
      *
      * @return \Aimeos\MShop\ContextIface Context object
      */
-    protected function context(): \Aimeos\MShop\ContextIface
+    protected function context(): \Aimeos\M_Shop\Context_Iface
     {
         return $this->context;
     }
-
     /**
      * Returns the mapping list
      *
      * @return array Associative list of field positions in CSV as keys and domain item keys as values
      */
-    protected function getMapping(): array
+    protected function get_mapping(): array
     {
         return $this->mapping;
     }
-
     /**
      * Returns the decorated processor object
      *
@@ -80,7 +69,6 @@ class Base extends \Aimeos\Controller\Jobs\Common\Catalog\Import\Csv\Base
         if ($this->object === null) {
             throw new \Aimeos\Controller\Jobs\Exception('No processor object available');
         }
-
         return $this->object;
     }
 }

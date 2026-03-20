@@ -1,18 +1,15 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2018-2026
  * @package Controller
  * @subpackage Jobs
  */
-
 namespace Aimeos\Controller\Jobs\Catalog\Import\Csv;
 
 use Aimeos\Base\Logger\Base as Log;
-
 /**
  * Job controller for CSV catalog imports.
  *
@@ -53,7 +50,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Catalog\Import\Csv\Base im
      * @param string Last part of the class name
      * @since 2018.04
      */
-
     /** controller/jobs/catalog/import/csv/decorators/excludes
      * Excludes decorators added by the "common" option from the catalog import CSV job controller
      *
@@ -78,7 +74,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Catalog\Import\Csv\Base im
      * @see controller/jobs/catalog/import/csv/decorators/global
      * @see controller/jobs/catalog/import/csv/decorators/local
      */
-
     /** controller/jobs/catalog/import/csv/decorators/global
      * Adds a list of globally available decorators only to the catalog import CSV job controller
      *
@@ -101,7 +96,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Catalog\Import\Csv\Base im
      * @see controller/jobs/catalog/import/csv/decorators/excludes
      * @see controller/jobs/catalog/import/csv/decorators/local
      */
-
     /** controller/jobs/catalog/import/csv/decorators/local
      * Adds a list of local decorators only to the catalog import CSV job controller
      *
@@ -126,27 +120,24 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Catalog\Import\Csv\Base im
      * @see controller/jobs/catalog/import/csv/decorators/excludes
      * @see controller/jobs/catalog/import/csv/decorators/global
      */
-
     /**
      * Returns the localized name of the job.
      *
      * @return string Name of the job
      */
-    public function getName(): string
+    public function get_name(): string
     {
         return $this->context()->translate('controller/jobs', 'Catalog import CSV');
     }
-
     /**
      * Returns the localized description of the job.
      *
      * @return string Description of the job
      */
-    public function getDescription(): string
+    public function get_description(): string
     {
         return $this->context()->translate('controller/jobs', 'Imports new and updates existing categories from CSV files');
     }
-
     /**
      * Executes the job.
      *
@@ -156,43 +147,35 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Catalog\Import\Csv\Base im
     {
         $context = $this->context();
         $logger = $context->logger();
-
         try {
             $errors = 0;
             $fs = $context->fs('fs-import');
-            $site = $context->locale()->getSiteItem()->getCode();
+            $site = $context->locale()->get_site_item()->get_code();
             $location = $this->location() . '/' . $site;
-
-            if ($fs->isDir($location) === false) {
+            if ($fs->is_dir($location) === false) {
                 return;
             }
-
             $logger->info(sprintf('Started catalog import from "%1$s"', $location), 'import/csv/catalog');
-
             foreach (map($fs->scan($location))->sort() as $filename) {
                 $path = $location . '/' . $filename;
                 if ($filename[0] === '.') {
                     continue;
                 }
-                if ($fs instanceof \Aimeos\Base\Filesystem\DirIface && $fs->isDir($path)) {
+                if ($fs instanceof \Aimeos\Base\Filesystem\Dir_Iface && $fs->is_dir($path)) {
                     continue;
                 }
-
                 $errors = $this->import($path);
             }
-
             if ($errors > 0) {
                 $this->mail('Catalog CSV import', sprintf('Invalid catalog lines during import: %1$d', $errors));
             }
-
             $logger->info(sprintf('Finished catalog import from "%1$s"', $location), 'import/csv/catalog');
         } catch (\Exception $e) {
-            $logger->error('Catalog import error: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), 'import/csv/catalog');
-            $this->mail('Catalog CSV import error', $e->getMessage());
-            throw new \Aimeos\Controller\Jobs\Exception($e->getMessage());
+            $logger->error('Catalog import error: ' . $e->get_message() . "\n" . $e->get_trace_as_string(), 'import/csv/catalog');
+            $this->mail('Catalog CSV import error', $e->get_message());
+            throw new \Aimeos\Controller\Jobs\Exception($e->get_message());
         }
     }
-
     /**
      * Returns the directory for storing imported files
      *
@@ -230,7 +213,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Catalog\Import\Csv\Base im
         $backup = $this->context()->config()->get('controller/jobs/catalog/import/csv/backup');
         return \Aimeos\Base\Str::strtime((string) $backup);
     }
-
     /**
      * Returns the list of domain names that should be retrieved along with the attribute items
      *
@@ -258,7 +240,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Catalog\Import\Csv\Base im
          */
         return $this->context()->config()->get('controller/jobs/catalog/import/csv/domains', ['media', 'text']);
     }
-
     /**
      * Returns the position of the "catalog.code" column from the catalog item mapping
      *
@@ -266,17 +247,15 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Catalog\Import\Csv\Base im
      * @return int Position of the "catalog.code" column
      * @throws \Aimeos\Controller\Jobs\Exception If no mapping for "catalog.code" is found
      */
-    protected function getCodePosition(array $mapping): int
+    protected function get_code_position(array $mapping): int
     {
         foreach ($mapping as $pos => $key) {
             if ($key === 'catalog.code') {
                 return $pos;
             }
         }
-
         throw new \Aimeos\Controller\Jobs\Exception(sprintf('No "catalog.code" column in CSV mapping found'));
     }
-
     /**
      * Returns the catalog items building the tree as list
      *
@@ -284,19 +263,16 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Catalog\Import\Csv\Base im
      * @param array $domains List of domain names whose items should be fetched too
      * @return array Associative list of catalog codes as keys and items implementing \Aimeos\MShop\Catalog\Item\Iface as values
      */
-    protected function getCategories(array $codes, array $domains): array
+    protected function get_categories(array $codes, array $domains): array
     {
-        $manager = \Aimeos\MShop::create($this->context(), 'catalog');
+        $manager = \Aimeos\M_Shop::create($this->context(), 'catalog');
         $search = $manager->filter()->add(['catalog.code' => $codes])->slice(0, count($codes));
-
         $map = [];
         foreach ($manager->search($search, $domains) as $item) {
-            $map[$item->getCode()] = $item;
+            $map[$item->get_code()] = $item;
         }
-
         return $map;
     }
-
     /**
      * Returns the parent ID of the catalog node for the given code
      *
@@ -305,23 +281,19 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Catalog\Import\Csv\Base im
      * @param string $code Catalog item code of the parent category
      * @return string|null ID of the parent category or null for top level nodes
      */
-    protected function getParentId(array $catalogItems, array $map, string $code): ?string
+    protected function get_parent_id(array $catalog_items, array $map, string $code): ?string
     {
         if (!isset($map['catalog.parent'])) {
             $msg = sprintf('Required column "%1$s" not found for code "%2$s"', 'catalog.parent', $code);
             throw new \Aimeos\Controller\Jobs\Exception($msg);
         }
-
         $parent = trim($map['catalog.parent']);
-
-        if ($parent != '' && !isset($catalogItems[$parent])) {
+        if ($parent != '' && !isset($catalog_items[$parent])) {
             $msg = sprintf('Parent node for code "%1$s" not found', $parent);
             throw new \Aimeos\Controller\Jobs\Exception($msg);
         }
-
-        return ($parent != '' ? $catalogItems[$parent]->getId() : null);
+        return $parent != '' ? $catalog_items[$parent]->get_id() : null;
     }
-
     /**
      * Imports the CSV file from the given path
      *
@@ -332,48 +304,36 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Catalog\Import\Csv\Base im
     {
         $context = $this->context();
         $logger = $context->logger();
-
         $logger->info(sprintf('Started catalog import from "%1$s"', $path), 'import/csv/catalog');
-
         $maxcnt = $this->max();
         $skiplines = $this->skip();
         $domains = $this->domains();
-
         $mappings = $this->mapping();
-        $processor = $this->getProcessors($mappings);
-        $codePos = $this->getCodePosition($mappings['item']);
-
+        $processor = $this->get_processors($mappings);
+        $code_pos = $this->get_code_position($mappings['item']);
         $fs = $context->fs('fs-import');
         $fh = $fs->reads($path);
         $total = $errors = 0;
-
         for ($i = 0; $i < $skiplines; $i++) {
             fgetcsv($fh, null, ',', '"', '');
         }
-
-        while (($data = $this->getData($fh, $maxcnt, $codePos)) !== []) {
-            $catalogItems = $this->getCategories(array_keys($data), $domains);
-            $errors += $this->importCategories($catalogItems, $data, $mappings['item'], $processor);
-
+        while (($data = $this->get_data($fh, $maxcnt, $code_pos)) !== []) {
+            $catalog_items = $this->get_categories(array_keys($data), $domains);
+            $errors += $this->import_categories($catalog_items, $data, $mappings['item'], $processor);
             $total += count($data);
-            unset($catalogItems, $data);
+            unset($catalog_items, $data);
         }
-
         $processor->finish();
         fclose($fh);
-
         if (!empty($backup = $this->backup())) {
             $fs->move($path, $backup);
         } else {
             $fs->rm($path);
         }
-
         $str = sprintf('Finished catalog import from "%1$s" (%2$d/%3$d)', $path, $errors, $total);
         $logger->info($str, 'import/csv/catalog');
-
         return $errors;
     }
-
     /**
      * Imports the CSV data and creates new categories or updates existing ones
      *
@@ -384,56 +344,42 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Catalog\Import\Csv\Base im
      * @return int Number of catalogs that couldn't be imported
      * @throws \Aimeos\Controller\Jobs\Exception
      */
-    protected function importCategories(
-        array $catalogItems,
-        array $data,
-        array $mapping,
-        \Aimeos\Controller\Jobs\Common\Catalog\Import\Csv\Processor\Iface $processor
-    ): int {
+    protected function import_categories(array $catalog_items, array $data, array $mapping, \Aimeos\Controller\Jobs\Common\Catalog\Import\Csv\Processor\Iface $processor): int
+    {
         $errors = 0;
         $context = $this->context();
-        $manager = \Aimeos\MShop::create($context, 'catalog');
-
+        $manager = \Aimeos\M_Shop::create($context, 'catalog');
         foreach ($data as $code => $list) {
             $manager->begin();
-
             try {
                 $code = trim($code);
-                $item = $catalogItems[$code] ?? $manager->create();
-                $map = current($this->getMappedChunk($list, $mapping)); // there can only be one chunk for the base catalog data
-
+                $item = $catalog_items[$code] ?? $manager->create();
+                $map = current($this->get_mapped_chunk($list, $mapping));
+                // there can only be one chunk for the base catalog data
                 if ($map) {
                     $map['catalog.config'] = json_decode($map['catalog.config'] ?? '[]', true) ?: [];
-                    $parentid = $this->getParentId($catalogItems, $map, $code);
-                    $item->fromArray($map, true);
-
-                    if (isset($catalogItems[$code])) {
-                        $manager->move($item->getId(), $item->getParentId(), $parentid);
+                    $parentid = $this->get_parent_id($catalog_items, $map, $code);
+                    $item->from_array($map, true);
+                    if (isset($catalog_items[$code])) {
+                        $manager->move($item->get_id(), $item->get_parent_id(), $parentid);
                         $item = $manager->save($item);
                     } else {
                         $item = $manager->insert($item, $parentid);
                     }
-
                     $processor->process($item, $list);
-                    $catalogItems[$code] = $item;
-
+                    $catalog_items[$code] = $item;
                     $manager->save($item);
                 }
-
                 $manager->commit();
             } catch (\Exception $e) {
                 $manager->rollback();
-
-                $msg = sprintf('Unable to import catalog with code "%1$s": %2$s', $code, $e->getMessage());
+                $msg = sprintf('Unable to import catalog with code "%1$s": %2$s', $code, $e->get_message());
                 $context->logger()->error($msg, 'import/csv/catalog');
-
                 $errors++;
             }
         }
-
         return $errors;
     }
-
     /**
      * Returns the path to the directory with the CSV file
      *
@@ -462,7 +408,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Catalog\Import\Csv\Base im
          */
         return (string) $this->context()->config()->get('controller/jobs/catalog/import/csv/location', 'catalog');
     }
-
     /**
      * Returns the CSV column mapping
      *
@@ -494,16 +439,13 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Catalog\Import\Csv\Base im
          * @see controller/jobs/catalog/import/csv/max-size
          * @see controller/jobs/catalog/import/csv/skip-lines
          */
-        $map = (array) $this->context()->config()->get('controller/jobs/catalog/import/csv/mapping', $this->getDefaultMapping());
-
+        $map = (array) $this->context()->config()->get('controller/jobs/catalog/import/csv/mapping', $this->get_default_mapping());
         if (!isset($map['item']) || !is_array($map['item'])) {
             $msg = sprintf('Required mapping key "%1$s" is missing or contains no array', 'item');
             throw new \Aimeos\Controller\Jobs\Exception($msg);
         }
-
         return $map;
     }
-
     /**
      * Returns the maximum number of CSV rows to import at once
      *
@@ -532,7 +474,6 @@ class Standard extends \Aimeos\Controller\Jobs\Common\Catalog\Import\Csv\Base im
          */
         return (int) $this->context()->config()->get('controller/jobs/catalog/import/csv/max-size', 1000);
     }
-
     /**
      * Returns the number of rows skipped in front of each CSV files
      *

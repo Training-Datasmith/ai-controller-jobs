@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, https://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2015-2026
  * @package Controller
  * @subpackage Jobs
  */
-
 namespace Aimeos\Controller\Jobs;
 
 /**
@@ -24,15 +22,13 @@ interface Iface
      *
      * @return string Name of the job
      */
-    public function getName(): string;
-
+    public function get_name(): string;
     /**
      * Returns the localized description of the job
      *
      * @return string Description of the job
      */
-    public function getDescription(): string;
-
+    public function get_description(): string;
     /**
      * Executes the job
      *

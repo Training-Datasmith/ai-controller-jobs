@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2016-2026
  * @package Controller
  * @subpackage Jobs
  */
-
 namespace Aimeos\Controller\Jobs\Customer\Email\Account;
 
 /**
@@ -51,7 +49,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param string Last part of the class name
      * @since 2016.04
      */
-
     /** controller/jobs/customer/email/account/decorators/excludes
      * Excludes decorators added by the "common" option from the customer email account controllers
      *
@@ -76,7 +73,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/customer/email/account/decorators/global
      * @see controller/jobs/customer/email/account/decorators/local
      */
-
     /** controller/jobs/customer/email/account/decorators/global
      * Adds a list of globally available decorators only to the customer email account controllers
      *
@@ -99,7 +95,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/customer/email/account/decorators/excludes
      * @see controller/jobs/customer/email/account/decorators/local
      */
-
     /** controller/jobs/customer/email/account/decorators/local
      * Adds a list of local decorators only to the customer email account controllers
      *
@@ -123,31 +118,26 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/customer/email/account/decorators/excludes
      * @see controller/jobs/customer/email/account/decorators/global
      */
-
     use \Aimeos\Controller\Jobs\Mail;
-
     private array $sites = [];
-
     /**
      * Returns the localized name of the job.
      *
      * @return string Name of the job
      */
-    public function getName(): string
+    public function get_name(): string
     {
         return $this->context()->translate('controller/jobs', 'Customer account e-mails');
     }
-
     /**
      * Returns the localized description of the job.
      *
      * @return string Description of the job
      */
-    public function getDescription(): string
+    public function get_description(): string
     {
         return $this->context()->translate('controller/jobs', 'Sends e-mails for new customer accounts');
     }
-
     /**
      * Executes the job.
      *
@@ -157,39 +147,32 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
     {
         $context = $this->context();
         $queue = $context->queue('mq-email', 'customer/email/account');
-        $custManager = \Aimeos\MShop::create($context, 'customer');
-
+        $cust_manager = \Aimeos\M_Shop::create($context, 'customer');
         while (($msg = $queue->get()) !== null) {
             try {
-                if (($list = json_decode($msg->getBody(), true)) === null) {
-                    $str = sprintf('Invalid JSON encode message: %1$s', $msg->getBody());
+                if (($list = json_decode($msg->get_body(), true)) === null) {
+                    $str = sprintf('Invalid JSON encode message: %1$s', $msg->get_body());
                     throw new \Aimeos\Controller\Jobs\Exception($str);
                 }
-
                 $pass = $list['customer.password'] ?? null;
-                $item = $custManager->create()->fromArray($list, true);
-                $sites = $this->sites($item->getSiteId());
-
-                $address = $item->getPaymentAddress();
-                $context->locale()->setLanguageId($address->getLanguageId()); // for translation
-
-                $view = $this->view($address, $sites->getTheme()->filter()->last());
-                $view->account = $item->getCode();
+                $item = $cust_manager->create()->from_array($list, true);
+                $sites = $this->sites($item->get_site_id());
+                $address = $item->get_payment_address();
+                $context->locale()->set_language_id($address->get_language_id());
+                // for translation
+                $view = $this->view($address, $sites->get_theme()->filter()->last());
+                $view->account = $item->get_code();
                 $view->password = $pass;
-
-                $this->send($view, $address, $sites->getLogo()->filter()->last());
-
-                $str = sprintf('Sent customer account e-mail to "%1$s"', $address->getEmail());
+                $this->send($view, $address, $sites->get_logo()->filter()->last());
+                $str = sprintf('Sent customer account e-mail to "%1$s"', $address->get_email());
                 $context->logger()->debug($str, 'email/customer/account');
             } catch (\Exception $e) {
-                $str = 'Error while trying to send customer account e-mail: ' . $e->getMessage();
-                $context->logger()->error($str . PHP_EOL . $e->getTraceAsString(), 'email/customer/account');
+                $str = 'Error while trying to send customer account e-mail: ' . $e->get_message();
+                $context->logger()->error($str . PHP_EOL . $e->get_trace_as_string(), 'email/customer/account');
             }
-
             $queue->del($msg);
         }
     }
-
     /**
      * Sends the account creation e-mail to the e-mail address of the customer
      *
@@ -197,7 +180,7 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param \Aimeos\MShop\Common\Item\Address\Iface $address Address item
      * @param string|null $logoPath Path to the logo
      */
-    protected function send(\Aimeos\Base\View\Iface $view, \Aimeos\MShop\Common\Item\Address\Iface $address, ?string $logoPath = null)
+    protected function send(\Aimeos\Base\View\Iface $view, \Aimeos\M_Shop\Common\Item\Address\Iface $address, ?string $logo_path = null)
     {
         /** controller/jobs/customer/email/account/template-html
          * Relative path to the template for the HTML part of the account emails.
@@ -213,7 +196,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          * @since 2022.04
          * @see controller/jobs/customer/email/account/template-text
          */
-
         /** controller/jobs/customer/email/account/template-text
          * Relative path to the template for the text part of the account emails.
          *
@@ -228,41 +210,30 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          * @since 2022.04
          * @see controller/jobs/customer/email/account/template-html
          */
-
         $context = $this->context();
         $config = $context->config();
-
         $msg = $this->call('mailTo', $address);
-        $view->logo = $msg->embed($this->call('mailLogo', $logoPath), basename((string) $logoPath));
-
-        $msg->subject($context->translate('controller/jobs', 'Your new account'))
-            ->html($view->render($config->get('controller/jobs/customer/email/account/template-html', 'customer/email/account/html')))
-            ->text($view->render($config->get('controller/jobs/customer/email/account/template-text', 'customer/email/account/text')))
-            ->send();
+        $view->logo = $msg->embed($this->call('mailLogo', $logo_path), basename((string) $logo_path));
+        $msg->subject($context->translate('controller/jobs', 'Your new account'))->html($view->render($config->get('controller/jobs/customer/email/account/template-html', 'customer/email/account/html')))->text($view->render($config->get('controller/jobs/customer/email/account/template-text', 'customer/email/account/text')))->send();
     }
-
     /**
      * Returns the list of site items from the given site ID up to the root site
      *
      * @param string|null $siteId Site ID like "1.2.4."
      * @return \Aimeos\Map List of site items
      */
-    protected function sites(?string $siteId = null): \Aimeos\Map
+    protected function sites(?string $site_id = null): \Aimeos\Map
     {
-        if (!$siteId && !isset($this->sites[''])) {
-            $this->sites[''] = map(\Aimeos\MShop::create($this->context(), 'locale/site')->find('default'));
+        if (!$site_id && !isset($this->sites[''])) {
+            $this->sites[''] = map(\Aimeos\M_Shop::create($this->context(), 'locale/site')->find('default'));
         }
-
-        if (!isset($this->sites[(string) $siteId])) {
-            $manager = \Aimeos\MShop::create($this->context(), 'locale/site');
-            $siteIds = explode('.', trim((string) $siteId, '.'));
-
-            $this->sites[$siteId] = $manager->getPath(end($siteIds));
+        if (!isset($this->sites[(string) $site_id])) {
+            $manager = \Aimeos\M_Shop::create($this->context(), 'locale/site');
+            $site_ids = explode('.', trim((string) $site_id, '.'));
+            $this->sites[$site_id] = $manager->get_path(end($site_ids));
         }
-
-        return $this->sites[$siteId];
+        return $this->sites[$site_id];
     }
-
     /**
      * Returns the view populated with common data
      *
@@ -270,17 +241,13 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param string|null $theme Theme name
      * @return \Aimeos\Base\View\Iface View object
      */
-    protected function view(\Aimeos\MShop\Common\Item\Address\Iface $address, ?string $theme = null): \Aimeos\Base\View\Iface
+    protected function view(\Aimeos\M_Shop\Common\Item\Address\Iface $address, ?string $theme = null): \Aimeos\Base\View\Iface
     {
-        $view = $this->call('mailView', $address->getLanguageId());
+        $view = $this->call('mailView', $address->get_language_id());
         $view->intro = $this->call('mailIntro', $address);
         $view->css = $this->call('mailCss', $theme);
-        $view->addressItem = $address;
-        $view->urlparams = [
-            'site' => $this->context()->locale()->getSiteItem()->getCode(),
-            'locale' => $address->getLanguageId(),
-        ];
-
+        $view->address_item = $address;
+        $view->urlparams = ['site' => $this->context()->locale()->get_site_item()->get_code(), 'locale' => $address->get_language_id()];
         return $view;
     }
 }

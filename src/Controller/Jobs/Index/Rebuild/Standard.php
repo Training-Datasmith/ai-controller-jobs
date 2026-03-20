@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Metaways Infosystems GmbH, 2013
@@ -9,7 +8,6 @@ declare(strict_types=1);
  * @package Controller
  * @subpackage Jobs
  */
-
 namespace Aimeos\Controller\Jobs\Index\Rebuild;
 
 /**
@@ -52,7 +50,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param string Last part of the class name
      * @since 2014.03
      */
-
     /** controller/jobs/index/rebuild/decorators/excludes
      * Excludes decorators added by the "common" option from the catalog index rebuild controllers
      *
@@ -77,7 +74,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/index/rebuild/decorators/global
      * @see controller/jobs/index/rebuild/decorators/local
      */
-
     /** controller/jobs/index/rebuild/decorators/global
      * Adds a list of globally available decorators only to the catalog index rebuild controllers
      *
@@ -100,7 +96,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/index/rebuild/decorators/excludes
      * @see controller/jobs/index/rebuild/decorators/local
      */
-
     /** controller/jobs/index/rebuild/decorators/local
      * Adds a list of local decorators only to the catalog index rebuild controllers
      *
@@ -124,27 +119,24 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/index/rebuild/decorators/excludes
      * @see controller/jobs/index/rebuild/decorators/global
      */
-
     /**
      * Returns the localized name of the job.
      *
      * @return string Name of the job
      */
-    public function getName(): string
+    public function get_name(): string
     {
         return $this->context()->translate('controller/jobs', 'Index rebuild');
     }
-
     /**
      * Returns the localized description of the job.
      *
      * @return string Description of the job
      */
-    public function getDescription(): string
+    public function get_description(): string
     {
         return $this->context()->translate('controller/jobs', 'Rebuilds the index for searching products');
     }
-
     /**
      * Executes the job.
      *
@@ -153,9 +145,8 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
     public function run(): void
     {
         $context = $this->context();
-        $context->locale()->setLanguageId(null)->setCurrencyId(null);
+        $context->locale()->set_language_id(null)->set_currency_id(null);
         $date = date('Y-m-d H:i:s');
-
-        \Aimeos\MShop::create($context, 'index')->rebuild()->cleanup($date);
+        \Aimeos\M_Shop::create($context, 'index')->rebuild()->cleanup($date);
     }
 }

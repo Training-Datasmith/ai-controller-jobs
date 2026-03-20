@@ -1,147 +1,53 @@
 <?php
 
-declare(strict_types=1);
-
-$orderFcn = function (\Aimeos\MShop\Order\Item\Iface $item) {
-    return [
-        'invoice',
-        $item->getId(),
-        $item->getChannel(),
-        $item->getDatePayment(),
-        $item->getStatusPayment(),
-        $item->getDateDelivery(),
-        $item->getStatusDelivery(),
-        $item->getRelatedId(),
-        $item->getCustomerId(),
-        $item->getSitecode(),
-        $item->locale()->getLanguageId(),
-        $item->locale()->getCurrencyId(),
-        $item->getPrice()->getValue(),
-        $item->getPrice()->getCosts(),
-        $item->getPrice()->getRebate(),
-        $item->getPrice()->getTaxvalue(),
-        $item->getPrice()->getTaxflag(),
-        $item->getComment(),
-    ];
+declare (strict_types=1);
+$order_fcn = function (\Aimeos\M_Shop\Order\Item\Iface $item) {
+    return ['invoice', $item->get_id(), $item->get_channel(), $item->get_date_payment(), $item->get_status_payment(), $item->get_date_delivery(), $item->get_status_delivery(), $item->get_related_id(), $item->get_customer_id(), $item->get_sitecode(), $item->locale()->get_language_id(), $item->locale()->get_currency_id(), $item->get_price()->get_value(), $item->get_price()->get_costs(), $item->get_price()->get_rebate(), $item->get_price()->get_taxvalue(), $item->get_price()->get_taxflag(), $item->get_comment()];
 };
-
-$addressFcn = function (\Aimeos\MShop\Order\Item\Address\Iface $item) {
-    return [
-        'address',
-        $item->getParentId(),
-        $item->getType(),
-        $item->getSalutation(),
-        $item->getCompany(),
-        $item->getVatID(),
-        $item->getTitle(),
-        $item->getFirstName(),
-        $item->getLastName(),
-        $item->getAddress1(),
-        $item->getAddress2(),
-        $item->getAddress3(),
-        $item->getPostal(),
-        $item->getCity(),
-        $item->getState(),
-        $item->getCountryId(),
-        $item->getLanguageId(),
-        $item->getTelephone(),
-        $item->getTelefax(),
-        $item->getEmail(),
-        $item->getWebsite(),
-        $item->getLongitude(),
-        $item->getLatitude(),
-    ];
+$address_fcn = function (\Aimeos\M_Shop\Order\Item\Address\Iface $item) {
+    return ['address', $item->get_parent_id(), $item->get_type(), $item->get_salutation(), $item->get_company(), $item->get_vat_id(), $item->get_title(), $item->get_first_name(), $item->get_last_name(), $item->get_address1(), $item->get_address2(), $item->get_address3(), $item->get_postal(), $item->get_city(), $item->get_state(), $item->get_country_id(), $item->get_language_id(), $item->get_telephone(), $item->get_telefax(), $item->get_email(), $item->get_website(), $item->get_longitude(), $item->get_latitude()];
 };
-
-$serviceFcn = function (\Aimeos\MShop\Order\Item\Service\Iface $item) {
-    $list = [
-        'service',
-        $item->getParentId(),
-        $item->getType(),
-        $item->getCode(),
-        $item->getName(),
-        $item->getMediaUrl(),
-        $item->getPrice()->getValue(),
-        $item->getPrice()->getCosts(),
-        $item->getPrice()->getRebate(),
-        $item->getPrice()->getTaxrate(),
-    ];
-
-    if ($attr = $item->getAttributeItems()->first()) {
-        $list[] = $attr->getType();
-        $list[] = $attr->getCode();
-        $list[] = $attr->getName();
-        $list[] = $attr->getValue();
+$service_fcn = function (\Aimeos\M_Shop\Order\Item\Service\Iface $item) {
+    $list = ['service', $item->get_parent_id(), $item->get_type(), $item->get_code(), $item->get_name(), $item->get_media_url(), $item->get_price()->get_value(), $item->get_price()->get_costs(), $item->get_price()->get_rebate(), $item->get_price()->get_taxrate()];
+    if ($attr = $item->get_attribute_items()->first()) {
+        $list[] = $attr->get_type();
+        $list[] = $attr->get_code();
+        $list[] = $attr->get_name();
+        $list[] = $attr->get_value();
     }
-
     return $list;
 };
-
-$productFcn = function (\Aimeos\MShop\Order\Item\Product\Iface $item) {
-    $list = [
-        'product',
-        $item->getParentId(),
-        $item->getType(),
-        $item->getStockType(),
-        $item->getVendor(),
-        $item->getProductCode(),
-        $item->getScale(),
-        $item->getQuantity(),
-        $item->getQuantityOpen(),
-        $item->getName(),
-        $item->getDescription(),
-        $item->getMediaUrl(),
-        $item->getPrice()->getValue(),
-        $item->getPrice()->getCosts(),
-        $item->getPrice()->getRebate(),
-        $item->getPrice()->getTaxrate(),
-        $item->getPrice()->getTaxvalue(),
-        $item->getPrice()->getTaxflag(),
-        $item->getStatusPayment(),
-        $item->getStatusDelivery(),
-        $item->getTimeframe(),
-        $item->getPosition(),
-        $item->getNotes(),
-    ];
-
-    if ($attr = $item->getAttributeItems()->first()) {
-        $list[] = $attr->getType();
-        $list[] = $attr->getCode();
-        $list[] = $attr->getName();
-        $list[] = $attr->getValue();
+$product_fcn = function (\Aimeos\M_Shop\Order\Item\Product\Iface $item) {
+    $list = ['product', $item->get_parent_id(), $item->get_type(), $item->get_stock_type(), $item->get_vendor(), $item->get_product_code(), $item->get_scale(), $item->get_quantity(), $item->get_quantity_open(), $item->get_name(), $item->get_description(), $item->get_media_url(), $item->get_price()->get_value(), $item->get_price()->get_costs(), $item->get_price()->get_rebate(), $item->get_price()->get_taxrate(), $item->get_price()->get_taxvalue(), $item->get_price()->get_taxflag(), $item->get_status_payment(), $item->get_status_delivery(), $item->get_timeframe(), $item->get_position(), $item->get_notes()];
+    if ($attr = $item->get_attribute_items()->first()) {
+        $list[] = $attr->get_type();
+        $list[] = $attr->get_code();
+        $list[] = $attr->get_name();
+        $list[] = $attr->get_value();
     }
-
     return $list;
 };
-
 foreach ($this->get('items', []) as $item) {
-    echo '"' . join('","', $orderFcn($item)) . '"' . "\n";
-
-    foreach ($item->getAddress('payment') as $address) {
-        echo '"' . join('","', $addressFcn($address)) . '"' . "\n";
+    echo '"' . join('","', $order_fcn($item)) . '"' . "\n";
+    foreach ($item->get_address('payment') as $address) {
+        echo '"' . join('","', $address_fcn($address)) . '"' . "\n";
     }
-
-    foreach ($item->getAddress('delivery') as $address) {
-        echo '"' . join('","', $addressFcn($address)) . '"' . "\n";
+    foreach ($item->get_address('delivery') as $address) {
+        echo '"' . join('","', $address_fcn($address)) . '"' . "\n";
     }
-
-    foreach ($item->getService('payment') as $service) {
-        echo '"' . join('","', $serviceFcn($service)) . '"' . "\n";
+    foreach ($item->get_service('payment') as $service) {
+        echo '"' . join('","', $service_fcn($service)) . '"' . "\n";
     }
-
-    foreach ($item->getService('delivery') as $service) {
-        echo '"' . join('","', $serviceFcn($service)) . '"' . "\n";
+    foreach ($item->get_service('delivery') as $service) {
+        echo '"' . join('","', $service_fcn($service)) . '"' . "\n";
     }
-
-    foreach ($item->getCoupons() as $code => $list) {
-        echo '"coupon","' . $item->getId() . '""' . str_replace('"', '\\"', $code) . '"' . "\n";
+    foreach ($item->get_coupons() as $code => $list) {
+        echo '"coupon","' . $item->get_id() . '""' . str_replace('"', '\"', $code) . '"' . "\n";
     }
-
-    foreach ($item->getProducts() as $product) {
-        echo '"' . join('","', $productFcn($product)) . '"' . "\n";
-
-        foreach ($product->getProducts() as $subProduct) {
-            echo '"' . join('","', $productFcn($subProduct)) . '"' . "\n";
+    foreach ($item->get_products() as $product) {
+        echo '"' . join('","', $product_fcn($product)) . '"' . "\n";
+        foreach ($product->get_products() as $sub_product) {
+            echo '"' . join('","', $product_fcn($sub_product)) . '"' . "\n";
         }
     }
 }

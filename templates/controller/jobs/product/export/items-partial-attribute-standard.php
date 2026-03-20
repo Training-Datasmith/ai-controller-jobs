@@ -4,7 +4,6 @@
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2019-2026
  */
-
 /** controller/jobs/product/export/partials/attribute
  * Name of the partial used for exporting the attribute items into the product XML
  *
@@ -17,17 +16,37 @@
  * @since 2019.04
  * @category Developer
  */
-
-$enc = $this->encoder()
-
+$enc = $this->encoder();
 ?>
 <attribute>
-	<?php foreach ($this->listItems as $listItem) : ?>
-		<?php if ($refItem = $listItem->getRefItem()) : ?>
-			<attributeitem ref="<?= $enc->attr($refItem->getDomain() . '|' . $refItem->getType() . '|' . $refItem->getCode()) ?>"
-				lists.type="<?= $enc->attr($listItem->getType()) ?>" lists.config="<?= $enc->attr(json_encode($listItem->getConfig())) ?>"
-				lists.datestart="<?= $enc->attr(str_replace(' ', 'T', $listItem->getDateStart() ?? '')) ?>" lists.dateend="<?= $enc->attr(str_replace(' ', 'T', $listItem->getDateEnd() ?? '')) ?>"
-				lists.position="<?= $enc->attr($listItem->getPosition()) ?>" lists.status="<?= $enc->attr($listItem->getStatus()) ?>" />
-		<?php endif ?>
-	<?php endforeach ?>
+	<?php 
+foreach ($this->list_items as $list_item) {
+    ?>
+		<?php 
+    if ($ref_item = $list_item->get_ref_item()) {
+        ?>
+			<attributeitem ref="<?php 
+        echo $enc->attr($ref_item->get_domain() . '|' . $ref_item->get_type() . '|' . $ref_item->get_code());
+        ?>"
+				lists.type="<?php 
+        echo $enc->attr($list_item->get_type());
+        ?>" lists.config="<?php 
+        echo $enc->attr(json_encode($list_item->get_config()));
+        ?>"
+				lists.datestart="<?php 
+        echo $enc->attr(str_replace(' ', 'T', $list_item->get_date_start() ?? ''));
+        ?>" lists.dateend="<?php 
+        echo $enc->attr(str_replace(' ', 'T', $list_item->get_date_end() ?? ''));
+        ?>"
+				lists.position="<?php 
+        echo $enc->attr($list_item->get_position());
+        ?>" lists.status="<?php 
+        echo $enc->attr($list_item->get_status());
+        ?>" />
+		<?php 
+    }
+    ?>
+	<?php 
+}
+?>
 </attribute>

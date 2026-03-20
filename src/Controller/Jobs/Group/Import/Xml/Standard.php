@@ -1,14 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 /**
  * @license LGPLv3, http://opensource.org/licenses/LGPL-3.0
  * @copyright Aimeos (aimeos.org), 2019-2026
  * @package Controller
  * @subpackage Jobs
  */
-
 namespace Aimeos\Controller\Jobs\Group\Import\Xml;
 
 /**
@@ -51,7 +49,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param string Last part of the class name
      * @since 2019.04
      */
-
     /** controller/jobs/group/import/xml/decorators/excludes
      * Excludes decorators added by the "common" option from the group import CSV job controller
      *
@@ -76,7 +73,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/group/import/xml/decorators/global
      * @see controller/jobs/group/import/xml/decorators/local
      */
-
     /** controller/jobs/group/import/xml/decorators/global
      * Adds a list of globally available decorators only to the group import CSV job controller
      *
@@ -99,7 +95,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/group/import/xml/decorators/excludes
      * @see controller/jobs/group/import/xml/decorators/local
      */
-
     /** controller/jobs/group/import/xml/decorators/local
      * Adds a list of local decorators only to the group import CSV job controller
      *
@@ -124,29 +119,25 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @see controller/jobs/group/import/xml/decorators/excludes
      * @see controller/jobs/group/import/xml/decorators/global
      */
-
     use \Aimeos\Controller\Jobs\Common\Import\Xml\Traits;
-
     /**
      * Returns the localized name of the job.
      *
      * @return string Name of the job
      */
-    public function getName(): string
+    public function get_name(): string
     {
         return $this->context()->translate('controller/jobs', 'Groups import XML');
     }
-
     /**
      * Returns the localized description of the job.
      *
      * @return string Description of the job
      */
-    public function getDescription(): string
+    public function get_description(): string
     {
         return $this->context()->translate('controller/jobs', 'Imports new and updates existing groups from XML files');
     }
-
     /**
      * Executes the job.
      *
@@ -157,44 +148,35 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
         $context = $this->context();
         $logger = $context->logger();
         $process = $context->process();
-
         try {
             $fs = $context->fs('fs-import');
-            $site = $context->locale()->getSiteItem()->getCode();
+            $site = $context->locale()->get_site_item()->get_code();
             $location = $this->location() . '/' . $site;
-
-            if ($fs->isDir($location) === false) {
+            if ($fs->is_dir($location) === false) {
                 return;
             }
-
             $logger->info(sprintf('Started group import from "%1$s"', $location), 'import/xml/group');
-
-            $fcn = function (\Aimeos\MShop\ContextIface $context, string $path): void {
+            $fcn = function (\Aimeos\M_Shop\Context_Iface $context, string $path): void {
                 $this->import($context, $path);
             };
-
             foreach (map($fs->scan($location))->sort() as $filename) {
                 $path = $location . '/' . $filename;
                 if ($filename[0] === '.') {
                     continue;
                 }
-                if ($fs instanceof \Aimeos\Base\Filesystem\DirIface && $fs->isDir($path)) {
+                if ($fs instanceof \Aimeos\Base\Filesystem\Dir_Iface && $fs->is_dir($path)) {
                     continue;
                 }
-
                 $process->start($fcn, [$context, $path]);
             }
-
             $process->wait();
-
             $logger->info(sprintf('Finished group import from "%1$s"', $location), 'import/xml/group');
         } catch (\Exception $e) {
-            $logger->error('Customer group import error: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), 'import/xml/group');
-            $this->mail('Customer group XML import error', $e->getMessage());
+            $logger->error('Customer group import error: ' . $e->get_message() . "\n" . $e->get_trace_as_string(), 'import/xml/group');
+            $this->mail('Customer group XML import error', $e->get_message());
             throw $e;
         }
     }
-
     /**
      * Returns the directory for storing imported files
      *
@@ -229,101 +211,81 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
         $backup = $this->context()->config()->get('controller/jobs/group/import/xml/backup');
         return \Aimeos\Base\Str::strtime((string) $backup);
     }
-
     /**
      * Imports the XML file given by its path
      *
      * @param \Aimeos\MShop\ContextIface $context Context object
      * @param string $path Relative path to the XML file in the file system
      */
-    protected function import(\Aimeos\MShop\ContextIface $context, string $path)
+    protected function import(\Aimeos\M_Shop\Context_Iface $context, string $path)
     {
         $slice = 0;
         $nodes = [];
-
-        $xml = new \XMLReader();
+        $xml = new \Xml_Reader();
         $maxquery = $this->max();
-
         $logger = $context->logger();
         $fs = $context->fs('fs-import');
         $tmpfile = $fs->readf($path);
-
         if ($xml->open($tmpfile, null, LIBXML_COMPACT | LIBXML_PARSEHUGE) === false) {
             throw new \Aimeos\Controller\Jobs\Exception(sprintf('No XML file "%1$s" found', $tmpfile));
         }
-
         $logger->info(sprintf('Started group import from file "%1$s"', $path), 'import/xml/group');
-
         while ($xml->read() === true) {
-            if ($xml->depth === 1 && $xml->nodeType === \XMLReader::ELEMENT && $xml->name === 'groupitem') {
+            if ($xml->depth === 1 && $xml->node_type === \Xml_Reader::ELEMENT && $xml->name === 'groupitem') {
                 if (($dom = $xml->expand()) === false) {
                     $msg = sprintf('Expanding "%1$s" node failed', 'groupitem');
                     throw new \Aimeos\Controller\Jobs\Exception($msg);
                 }
-
                 $nodes[] = $dom;
-
                 if ($slice++ >= $maxquery) {
-                    $this->importNodes($nodes);
+                    $this->import_nodes($nodes);
                     unset($nodes);
                     $nodes = [];
                     $slice = 0;
                 }
             }
         }
-
-        $this->importNodes($nodes);
+        $this->import_nodes($nodes);
         unset($nodes);
-
-        foreach ($this->getProcessors() as $proc) {
+        foreach ($this->get_processors() as $proc) {
             $proc->finish();
         }
-
         unlink($tmpfile);
-
         if (!empty($backup = $this->backup())) {
             $fs->move($path, $backup);
         } else {
             $fs->rm($path);
         }
-
         $logger->info(sprintf('Finished group import from file "%1$s"', $path), 'import/xml/group');
     }
-
     /**
      * Imports the given DOM nodes
      *
      * @param string[] $ref List of domain names whose referenced items will be updated in the group items
      */
-    protected function importNodes(array $nodes)
+    protected function import_nodes(array $nodes)
     {
         $codes = $map = [];
-
         foreach ($nodes as $node) {
-            if (($attr = $node->attributes->getNamedItem('ref')) !== null) {
-                $codes[$attr->nodeValue] = null;
+            if (($attr = $node->attributes->get_named_item('ref')) !== null) {
+                $codes[$attr->node_value] = null;
             }
         }
-
-        $manager = \Aimeos\MShop::create($this->context(), 'group');
+        $manager = \Aimeos\M_Shop::create($this->context(), 'group');
         $search = $manager->filter()->slice(0, count($codes));
-        $search->setConditions($search->compare('==', 'group.code', array_keys($codes)));
-
+        $search->set_conditions($search->compare('==', 'group.code', array_keys($codes)));
         foreach ($manager->search($search) as $item) {
-            $map[$item->getCode()] = $item;
+            $map[$item->get_code()] = $item;
         }
-
         foreach ($nodes as $node) {
-            if (($attr = $node->attributes->getNamedItem('ref')) !== null && isset($map[$attr->nodeValue])) {
-                $item = $this->process($map[$attr->nodeValue], $node);
+            if (($attr = $node->attributes->get_named_item('ref')) !== null && isset($map[$attr->node_value])) {
+                $item = $this->process($map[$attr->node_value], $node);
             } else {
                 $item = $this->process($manager->create(), $node);
             }
-
             $manager->save($item);
         }
     }
-
     /**
      * Returns the path to the directory with the XML file
      *
@@ -348,7 +310,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          */
         return (string) $this->context()->config()->get('controller/jobs/group/import/xml/location', 'group');
     }
-
     /**
      * Returns the maximum number of XML nodes processed at once
      *
@@ -373,7 +334,6 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
          */
         return $this->context()->config()->get('controller/jobs/group/import/xml/max-query', 100);
     }
-
     /**
      * Updates the group item and its referenced items using the given DOM node
      *
@@ -381,18 +341,15 @@ class Standard extends \Aimeos\Controller\Jobs\Base implements \Aimeos\Controlle
      * @param \DomElement $node DOM node used for updating the group item
      * @return \Aimeos\MShop\Group\Item\Iface $item Updated group item object
      */
-    protected function process(\Aimeos\MShop\Group\Item\Iface $item, \DomElement $node): \Aimeos\MShop\Group\Item\Iface
+    protected function process(\Aimeos\M_Shop\Group\Item\Iface $item, \Dom_Element $node): \Aimeos\M_Shop\Group\Item\Iface
     {
         $list = [];
-
         foreach ($node->attributes as $attr) {
-            $list[$attr->nodeName] = $attr->nodeValue;
+            $list[$attr->node_name] = $attr->node_value;
         }
-
-        foreach ($node->childNodes as $tag) {
-            $list[$tag->nodeName] = $tag->nodeValue;
+        foreach ($node->child_nodes as $tag) {
+            $list[$tag->node_name] = $tag->node_value;
         }
-
-        return $item->fromArray($list, true);
+        return $item->from_array($list, true);
     }
 }
